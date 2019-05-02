@@ -11,11 +11,21 @@ use hdk::holochain_core_types::{
     validation::EntryValidationData
 };
 
+use crate::game_state::GameState;
+
 #[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub struct Game {
-    player_1: Address,
-    player_2: Address,
-    created_at: u32,
+    pub player_1: Address,
+    pub player_2: Address,
+    pub created_at: u32,
+}
+
+pub fn get_latest_move(game_address: &Address) -> Address {
+    Address::from("")
+}
+
+pub fn get_state(game_address: &Address) -> ZomeApiResult<GameState> {
+    Ok(GameState::new())
 }
 
 pub fn definition() -> ValidatingEntryType {

@@ -18,13 +18,21 @@ pub struct Pos {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
+pub struct MoveInput {
+	pub game: Address,
+	pub move_type: String,
+	pub from: Pos,
+	pub to: Pos,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub struct Move {
-	game: Address,
-	author: Address,
-	move_type: String,
-	from: Pos,
-	to: Pos,
-	previous_move: Address
+	pub game: Address,
+	pub author: Address,
+	pub move_type: String,
+	pub from: Pos,
+	pub to: Pos,
+	pub previous_move: Address
 }
 
 pub fn definition() -> ValidatingEntryType {

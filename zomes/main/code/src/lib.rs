@@ -9,17 +9,14 @@ extern crate serde_json;
 extern crate holochain_core_types_derive;
 
 use hdk::{
-    entry_definition::ValidatingEntryType,
     error::ZomeApiResult,
     AGENT_ADDRESS,
 };
 use hdk::holochain_core_types::{
     cas::content::Address,
     entry::Entry,
-    dna::entry_types::Sharing,
     error::HolochainError,
     json::JsonString,
-    validation::EntryValidationData
 };
 
 

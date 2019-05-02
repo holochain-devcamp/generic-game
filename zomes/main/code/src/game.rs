@@ -4,7 +4,6 @@ use hdk::{
 };
 use hdk::holochain_core_types::{
     cas::content::Address,
-    entry::Entry,
     dna::entry_types::Sharing,
     error::HolochainError,
     json::JsonString,
@@ -20,11 +19,11 @@ pub struct Game {
     pub created_at: u32,
 }
 
-pub fn get_latest_move(game_address: &Address) -> Address {
+pub fn get_latest_move(_game_address: &Address) -> Address {
     Address::from("")
 }
 
-pub fn get_state(game_address: &Address) -> ZomeApiResult<GameState> {
+pub fn get_state(_game_address: &Address) -> ZomeApiResult<GameState> {
     Ok(GameState::new())
 }
 
@@ -39,7 +38,7 @@ pub fn definition() -> ValidatingEntryType {
 
         validation: | validation_data: hdk::EntryValidationData<Game>| {
             match validation_data {
-                EntryValidationData::Create{entry, validation_data} => {
+                EntryValidationData::Create{entry: _, validation_data: _} => {
                     Ok(())
                 },
                 _ => {

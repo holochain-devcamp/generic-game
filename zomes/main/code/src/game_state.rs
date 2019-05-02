@@ -1,14 +1,6 @@
-use hdk::{
-    entry_definition::ValidatingEntryType,
-    error::ZomeApiResult,
-};
 use hdk::holochain_core_types::{
-    cas::content::Address,
-    entry::Entry,
-    dna::entry_types::Sharing,
     error::HolochainError,
     json::JsonString,
-    validation::EntryValidationData
 };
 
 use crate::game_move::Pos;

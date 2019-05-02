@@ -1,15 +1,15 @@
 use hdk::{
     entry_definition::ValidatingEntryType,
-    error::ZomeApiResult,
 };
 use hdk::holochain_core_types::{
     cas::content::Address,
-    entry::Entry,
     dna::entry_types::Sharing,
     error::HolochainError,
     json::JsonString,
     validation::EntryValidationData
 };
+
+use crate::game_state::GameState;
 
 #[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub struct Pos {
@@ -35,6 +35,12 @@ pub struct Move {
 	pub previous_move: Address
 }
 
+impl Move {
+	fn is_valid(&self, _game_state: GameState) -> Result<(), String> {
+		Ok(())
+	}
+}
+
 pub fn definition() -> ValidatingEntryType {
     entry!(
         name: "move",
@@ -46,8 +52,8 @@ pub fn definition() -> ValidatingEntryType {
 
         validation: | validation_data: hdk::EntryValidationData<Move>| {
             match validation_data {
-                EntryValidationData::Create{entry, validation_data} => {
-                    Ok(())
+                EntryValidationData::Create{entry, validation_data: _} => {
+                    Move::from(entry).is_valid(GameState::new())
                 },
                 _ => {
                     Err("Cannot modify or delete a move".into())

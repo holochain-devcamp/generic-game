@@ -12,26 +12,32 @@ use hdk::holochain_core_types::{
 use crate::game_state::GameState;
 
 #[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
-pub struct Pos {
-	x: u32,
-	y: u32
+pub struct Piece {
+	pub x: usize,
+	pub y: usize,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub struct MoveInput {
 	pub game: Address,
-	pub move_type: String,
-	pub from: Pos,
-	pub to: Pos,
+	pub move_type: MoveType,
+}
+
+
+// this is specific to Checkers
+#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
+pub enum MoveType {
+	MovePiece {
+		from: Piece,
+		to: Piece,
+	},
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub struct Move {
 	pub game: Address,
 	pub author: Address,
-	pub move_type: String,
-	pub from: Pos,
-	pub to: Pos,
+	pub move_type: MoveType,
 	pub previous_move: Address
 }
 
@@ -53,12 +59,39 @@ pub fn definition() -> ValidatingEntryType {
         validation: | validation_data: hdk::EntryValidationData<Move>| {
             match validation_data {
                 EntryValidationData::Create{entry, validation_data: _} => {
-                    Move::from(entry).is_valid(GameState::new())
+                    Move::from(entry).is_valid(GameState::initial())
                 },
                 _ => {
                     Err("Cannot modify or delete a move".into())
                 }
             }
-        }
+        },
+
+        links: [
+        	from!(
+                "game",
+                tag: "",
+
+                validation_package: || {
+                    hdk::ValidationPackageDefinition::Entry
+                },
+
+                validation: | _validation_data: hdk::LinkValidationData| {
+                    Ok(())
+                }
+            ),
+        	from!(
+                "move",
+                tag: "",
+
+                validation_package: || {
+                    hdk::ValidationPackageDefinition::Entry
+                },
+
+                validation: | _validation_data: hdk::LinkValidationData| {
+                    Ok(())
+                }
+            )
+        ]
     )
 }

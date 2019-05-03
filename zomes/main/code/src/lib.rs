@@ -17,6 +17,7 @@ use hdk::holochain_core_types::{
     entry::Entry,
     error::HolochainError,
     json::JsonString,
+    cas::content::AddressableContent,
 };
 
 
@@ -25,7 +26,7 @@ mod game_move;
 mod game_state;
 
 use game::Game;
-use game_move::Move;
+use game_move::{Move, MoveInput};
 use game_state::GameState;
 
 fn handle_create_game(opponent: Address, timestamp: u32) -> ZomeApiResult<Address> {
@@ -41,32 +42,32 @@ fn handle_create_game(opponent: Address, timestamp: u32) -> ZomeApiResult<Addres
     hdk::commit_entry(&game_entry)
 }
 
-fn handle_make_move(game_move: Move) -> ZomeApiResult<GameState> {
-    
-    let previous_move = game::get_latest_move(&game_move.game);
-
+fn handle_make_move(game_move: MoveInput) -> ZomeApiResult<()> {
+    let base_address = match game::get_moves(&game_move.game)?.last() {
+        Some(previous_move) => Entry::App("move".into(), previous_move.into()).address(),
+        None => game_move.game.clone(),
+    };
     let new_move = Move {
         game: game_move.game,
         author: AGENT_ADDRESS.to_string().into(),
         move_type: game_move.move_type,
-        from: game_move.from,
-        to: game_move.to,
-        previous_move: previous_move.clone(),
+        previous_move: base_address.clone(),
     };
-
     let game_entry = Entry::App(
         "move".into(),
         new_move.into(),
     );
     let move_address = hdk::commit_entry(&game_entry)?;
-
-    hdk::link_entries(&previous_move, &move_address, "")?;
-
-    Ok(GameState::new())
+    hdk::link_entries(&base_address, &move_address, "")?;
+    Ok(())
 }
 
 fn handle_get_state(game_address: Address) -> ZomeApiResult<GameState> {
     game::get_state(&game_address)
+}
+
+fn handle_get_moves(game_address: Address) -> ZomeApiResult<Vec<Move>> {
+    game::get_moves(&game_address)
 }
 
 define_zome! {
@@ -84,8 +85,8 @@ define_zome! {
             handler: handle_create_game
         }
         make_move: {
-            inputs: |game_move: Move|,
-            outputs: |result: ZomeApiResult<GameState>|,
+            inputs: |game_move: MoveInput|,
+            outputs: |result: ZomeApiResult<()>|,
             handler: handle_make_move
         }
         get_state: {
@@ -93,9 +94,14 @@ define_zome! {
             outputs: |result: ZomeApiResult<GameState>|,
             handler: handle_get_state
         }
+        get_moves: {
+            inputs: |game_address: Address|,
+            outputs: |result: ZomeApiResult<Vec<Move>>|,
+            handler: handle_get_moves            
+        }
     ]
 
     traits: {
-        hc_public [create_game, make_move, get_state]
+        hc_public [create_game, make_move, get_state, get_moves]
     }
 }

@@ -16,8 +16,3 @@ pub use crate::checkers::{
         MoveType,
     },
 };
-
-
-const BOARD_SIZE: usize = 8;
-
-

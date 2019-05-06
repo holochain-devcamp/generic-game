@@ -6,7 +6,8 @@ use hdk::holochain_core_types::{
     dna::entry_types::Sharing,
     error::HolochainError,
     json::JsonString,
-    validation::EntryValidationData
+    validation::EntryValidationData,
+    entry::Entry,
 };
 
 use crate::MoveType;
@@ -42,18 +43,21 @@ pub fn definition() -> ValidatingEntryType {
         validation: | validation_data: hdk::EntryValidationData<Move>| {
             match validation_data {
                 EntryValidationData::Create{entry, validation_data} => {
-                	let local_chain = validation_data.package.source_chain_entries
+                	let mut local_chain = validation_data.package.source_chain_entries
                 		.ok_or("Could not retrieve source chain")?;
                 	hdk::debug(format!("{:?}", local_chain))?;
+
                 	// load the game and game state
                 	let new_move = Move::from(entry);
-                	let mut state = get_state_local_chain(local_chain.clone(), &new_move.game)
+
+                    // Sometimes the validating entry is already in the chain when validation runs,
+                    // To make our state reduction work correctly this must be removed
+                    local_chain.remove_item(&Entry::App("move".into() , new_move.clone().into()));
+
+                	let state = get_state_local_chain(local_chain.clone(), &new_move.game)
                 		.map_err(|_| "Could not load state during validation")?;
                 	let game = get_game_local_chain(local_chain, &new_move.game)
                 	    .map_err(|_| "Could not load game during validation")?;
-
-                	// THIS IS A HACK! Find a better solution to the problem of unsorted, possibly duplicate calls to validate
-                	state.moves.remove_item(&new_move);
                     
                     new_move.is_valid(game, state)
                 },

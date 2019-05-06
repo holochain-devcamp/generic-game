@@ -59,7 +59,8 @@ pub fn get_moves(game_address: &Address) -> ZomeApiResult<Vec<Move>> {
 
 pub fn get_state(game_address: &Address) -> ZomeApiResult<GameState> {
     let moves = get_moves(game_address)?;
-    let new_state = moves.iter().fold(GameState::initial(), state_reducer);
+    let game = get_game(game_address)?;
+    let new_state = moves.iter().fold(GameState::initial(), |state, new_move| state_reducer(game.clone(), state, new_move));
     Ok(new_state)
 }
 
@@ -106,8 +107,9 @@ pub fn get_moves_local_chain(local_chain: Vec<Entry>, game_address: &Address) ->
 }
 
 pub fn get_state_local_chain(local_chain: Vec<Entry>, game_address: &Address) -> ZomeApiResult<GameState> {
-    let moves = get_moves_local_chain(local_chain, game_address)?;
-    let new_state = moves.iter().fold(GameState::initial(), state_reducer);
+    let moves = get_moves_local_chain(local_chain.clone(), game_address)?;
+    let game = get_game_local_chain(local_chain, game_address)?;
+    let new_state = moves.iter().fold(GameState::initial(), move |state, new_move| state_reducer(game.clone(), state, new_move));
     Ok(new_state)
 }
 

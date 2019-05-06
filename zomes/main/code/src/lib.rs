@@ -83,6 +83,10 @@ fn handle_get_state(game_address: Address) -> ZomeApiResult<GameState> {
     game::get_state(&game_address)
 }
 
+fn handle_render_state(game_address: Address) -> ZomeApiResult<String> {
+    Ok(handle_get_state(game_address)?.render())
+}
+
 define_zome! {
     entries: [
        game::definition(),
@@ -107,9 +111,14 @@ define_zome! {
             outputs: |result: ZomeApiResult<GameState>|,
             handler: handle_get_state
         }
+        render_state: {
+            inputs: |game_address: Address|,
+            outputs: |result: ZomeApiResult<String>|,
+            handler: handle_render_state
+        }
     ]
 
     traits: {
-        hc_public [create_game, make_move, get_state]
+        hc_public [create_game, make_move, get_state, render_state]
     }
 }

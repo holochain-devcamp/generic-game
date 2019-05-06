@@ -4,11 +4,18 @@ use hdk::holochain_core_types::{
 };
 
 use crate::game_move::Move;
+use crate::game::Game;
 use crate::checkers::{
     moves::Piece,
     MoveType,
+    validation::{Player, get_current_player},
 };
 
+pub const BOARD_SIZE: usize = 8;
+
+const WHITE_PIECE: char = '░';
+const BLACK_PIECE: char = '▓';
+const EMPTY_SPACE: char = ' ';
 
 /**
  *
@@ -61,11 +68,31 @@ impl GameState {
             player_2: p2,
         }
     }
+
+    pub fn render(&self) -> String {
+        let board = board_sparse_to_dense(self);
+        let mut disp = "  x  0 1 2 3 4 5 6 7\ny\n".to_string();
+        for y in 0..BOARD_SIZE {
+            disp.push_str(&format!("{}   |", y));
+            for x in 0..BOARD_SIZE {
+                let c = match board[x][y] {
+                    1 => WHITE_PIECE,
+                    2 => BLACK_PIECE,
+                    _ => EMPTY_SPACE,
+                };
+                disp.push_str(&format!("{}|", c));
+            }
+            disp.push('\n');
+        }
+        disp
+    }
 }
 
 /// takes a current game state and a move and progresses the state
 /// assumes that moves are totally valid by this stage
-pub fn state_reducer(current_state: GameState, next_move: &Move) -> GameState {
+pub fn state_reducer(game: Game, current_state: GameState, next_move: &Move) -> GameState {
+    let current_player = get_current_player(&game, &next_move.author).unwrap();
+
     match &next_move.move_type {
         MoveType::MovePiece{to, from} => {
             let mut board = board_sparse_to_dense(&current_state);
@@ -73,7 +100,7 @@ pub fn state_reducer(current_state: GameState, next_move: &Move) -> GameState {
             moves.push(next_move.to_owned());
             // make the move by deleting the piece at the from position and adding one at the to position
             board[from.x][from.y] = 0;
-            board[to.x][to.y] = 1;
+            board[to.x][to.y] = match current_player { Player::Player1 => 1, Player::Player2 => 2};
 
             // check if any opponent pieces were taken in this move
 
@@ -99,7 +126,7 @@ pub fn state_reducer(current_state: GameState, next_move: &Move) -> GameState {
 =            Helper functions            =
 ========================================*/
 
-fn board_sparse_to_dense(state: &GameState)-> [[u8; 8]; 8] {
+pub fn board_sparse_to_dense(state: &GameState)-> [[u8; 8]; 8] {
     let mut board = [[0u8; 8]; 8];
     state.player_1.pieces.iter().for_each(|piece| {
         board[piece.x][piece.y] = 1;
@@ -110,7 +137,7 @@ fn board_sparse_to_dense(state: &GameState)-> [[u8; 8]; 8] {
     board
 }
 
-fn board_dense_to_sparse(board: [[u8; 8]; 8]) -> (Vec<Piece>, Vec<Piece>) {
+pub fn board_dense_to_sparse(board: [[u8; 8]; 8]) -> (Vec<Piece>, Vec<Piece>) {
     let mut player_1_pieces = Vec::new();
     let mut player_2_pieces = Vec::new();
     board.iter().enumerate().for_each(|(x, row)| {

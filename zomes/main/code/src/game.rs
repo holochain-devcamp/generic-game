@@ -1,7 +1,8 @@
 use std::convert::TryFrom;
 use hdk::{
+    utils,
     entry_definition::ValidatingEntryType,
-    error::ZomeApiResult,
+    error::{ZomeApiResult, ZomeApiError},
 };
 use hdk::holochain_core_types::{
     cas::content::Address,
@@ -10,6 +11,7 @@ use hdk::holochain_core_types::{
     json::JsonString,
     validation::EntryValidationData,
     entry::Entry,
+    cas::content::AddressableContent,
 };
 
 use crate::game_state::{GameState, PlayerState};
@@ -61,12 +63,61 @@ pub fn get_state(game_address: &Address) -> ZomeApiResult<GameState> {
     Ok(new_state)
 }
 
+pub fn get_game(game_address: &Address) -> ZomeApiResult<Game> {
+    utils::get_as_type(game_address.to_owned())
+}
+
+pub fn get_game_local_chain(local_chain: Vec<Entry>, game_address: &Address) -> ZomeApiResult<Game> {
+    local_chain
+        .iter()
+        .filter(|entry| {
+            entry.address() == game_address.to_owned()
+        })
+        .filter_map(|entry| {
+            if let Entry::App(_, entry_data) = entry {
+                Some(Game::try_from(entry_data.clone()).unwrap())
+            } else {
+                None
+            }
+        })
+        .next()
+        .ok_or(ZomeApiError::HashNotFound)
+}
+
+pub fn get_moves_local_chain(local_chain: Vec<Entry>, game_address: &Address) -> ZomeApiResult<Vec<Move>> {
+    Ok(local_chain
+        .iter()
+        .filter_map(|entry| {
+            if let Entry::App(entry_type, entry_data) = entry {
+                if entry_type.to_string() == "move" {
+                    Some(Move::try_from(entry_data.clone()).unwrap())
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
+        .filter(|game_move| {
+            game_move.game == game_address.to_owned()
+        })
+        .collect())
+}
+
+pub fn get_state_local_chain(local_chain: Vec<Entry>, game_address: &Address) -> ZomeApiResult<GameState> {
+    let moves = get_moves_local_chain(local_chain, game_address)?;
+    let new_state = moves.iter().fold(GameState::initial(), state_reducer);
+    Ok(new_state)
+}
+
 /// takes a current game state and a move and progresses the state
 /// assumes that moves are totally valid by this stage
 fn state_reducer(current_state: GameState, next_move: &Move) -> GameState {
     match &next_move.move_type {
         MoveType::MovePiece{to, from} => {
             let mut board = board_sparse_to_dense(&current_state);
+            let mut moves = current_state.moves;
+            moves.push(next_move.to_owned());
             // make the move by deleting the piece at the from position and adding one at the to position
             board[from.x][from.y] = 0;
             board[to.x][to.y] = 1;
@@ -84,6 +135,7 @@ fn state_reducer(current_state: GameState, next_move: &Move) -> GameState {
                     pieces: player_2_pieces,
                     resigned: false,
                 },
+                moves,
                 ..current_state
             }
         }

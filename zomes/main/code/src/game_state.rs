@@ -3,7 +3,7 @@ use hdk::holochain_core_types::{
     json::JsonString,
 };
 
-use crate::game_move::Piece;
+use crate::game_move::{Move, Piece};
 
 #[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub struct PlayerState {
@@ -14,6 +14,7 @@ pub struct PlayerState {
 #[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub struct GameState {
     pub complete: bool,
+    pub moves: Vec<Move>,
     pub player_1: PlayerState,
     pub player_2: PlayerState,
 }
@@ -37,6 +38,7 @@ impl GameState {
             resigned: false,
         };
         GameState {
+            moves: Vec::new(),
             complete: false,
             player_1: p1,
             player_2: p2,

@@ -9,16 +9,9 @@ use hdk::holochain_core_types::{
     validation::EntryValidationData
 };
 
-use crate::game_state::GameState;
-use crate::game::{Game, get_game_local_chain, get_state_local_chain};
+use crate::MoveType;
+use crate::game::{get_game_local_chain, get_state_local_chain};
 
-const BOARD_SIZE: usize = 8;
-
-#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson, PartialEq)]
-pub struct Piece {
-	pub x: usize,
-	pub y: usize,
-}
 
 #[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub struct MoveInput {
@@ -28,15 +21,6 @@ pub struct MoveInput {
 }
 
 
-// this is specific to Checkers
-#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson, PartialEq)]
-pub enum MoveType {
-	MovePiece {
-		from: Piece,
-		to: Piece,
-	},
-}
-
 #[derive(Clone, Debug, Serialize, Deserialize, DefaultJson, PartialEq)]
 pub struct Move {
 	pub game: Address,
@@ -45,54 +29,6 @@ pub struct Move {
 	pub previous_move: Address,
 	pub timestamp: u32,
 }
-
-impl Move {
-	fn is_valid(&self, game: Game, game_state: GameState) -> Result<(), String> {
-		match &self.move_type {
-			MoveType::MovePiece{from, to} => {
-				is_players_turn(self.author.clone(), game, game_state)?;
-				from.is_in_bounds()?;
-				to.is_in_bounds()?;
-				Ok(())
-			}
-		}
-	}
-
-}
-
-fn is_players_turn(player: Address, game: Game, game_state: GameState) -> Result<(), String> {
-	let moves = game_state.moves;
-	match moves.last() {
-		Some(last_move) => {
-			if last_move.author == player {
-				Err("It is not this players turn".into())
-			} else {
-				Ok(())
-			}
-		},
-		None => {
-			// by convention player 2 makes the first move thus accepting the invitation to play
-			if game.player_2 == player {
-				Ok(())
-			} else {
-				Err("Player 2 must make the first move".into())
-			}
-		},
-	}
-}
-
-impl Piece {
-	fn is_in_bounds(&self) -> Result<(), String> {
-		if self.x < BOARD_SIZE 
-		&& self.y < BOARD_SIZE // no need to check > 0 as usize is always positive
-		{
-			Ok(())
-		} else {
-			Err("Position is not in bounds".to_string())
-		}
-	}
-}
-
 
 pub fn definition() -> ValidatingEntryType {
     entry!(

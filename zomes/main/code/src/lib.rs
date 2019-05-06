@@ -19,14 +19,19 @@ use hdk::holochain_core_types::{
     json::JsonString,
 };
 
+// This is where you would import your own game State, MoveType and state_reducer
+mod checkers;
+pub use checkers::{
+    GameState,
+    MoveType,
+    state_reducer,
+};
 
 mod game;
 mod game_move;
-mod game_state;
 
 use game::Game;
 use game_move::{Move, MoveInput};
-use game_state::GameState;
 
 fn handle_create_game(opponent: Address, timestamp: u32) -> ZomeApiResult<Address> {
     let new_game = Game {

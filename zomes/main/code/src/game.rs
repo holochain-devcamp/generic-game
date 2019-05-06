@@ -14,8 +14,8 @@ use hdk::holochain_core_types::{
     cas::content::AddressableContent,
 };
 
-use crate::game_state::{GameState, PlayerState};
-use crate::game_move::{Move, MoveType, Piece};
+use crate::game_move::Move;
+use crate::{GameState, state_reducer};
 
 #[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub struct Game {
@@ -111,63 +111,6 @@ pub fn get_state_local_chain(local_chain: Vec<Entry>, game_address: &Address) ->
     Ok(new_state)
 }
 
-/// takes a current game state and a move and progresses the state
-/// assumes that moves are totally valid by this stage
-fn state_reducer(current_state: GameState, next_move: &Move) -> GameState {
-    match &next_move.move_type {
-        MoveType::MovePiece{to, from} => {
-            let mut board = board_sparse_to_dense(&current_state);
-            let mut moves = current_state.moves;
-            moves.push(next_move.to_owned());
-            // make the move by deleting the piece at the from position and adding one at the to position
-            board[from.x][from.y] = 0;
-            board[to.x][to.y] = 1;
-
-            // check if any opponent pieces were taken in this move
-
-            let (player_1_pieces, player_2_pieces) = board_dense_to_sparse(board);
-
-            GameState{
-                player_1: PlayerState {
-                    pieces: player_1_pieces,
-                    resigned: false,
-                },
-                player_2: PlayerState {
-                    pieces: player_2_pieces,
-                    resigned: false,
-                },
-                moves,
-                ..current_state
-            }
-        }
-    }
-}
-
-fn board_sparse_to_dense(state: &GameState)-> [[u8; 8]; 8] {
-    let mut board = [[0u8; 8]; 8];
-    state.player_1.pieces.iter().for_each(|piece| {
-        board[piece.x][piece.y] = 1;
-    });
-    state.player_2.pieces.iter().for_each(|piece| {
-        board[piece.x][piece.y] = 2;
-    });
-    board
-}
-
-fn board_dense_to_sparse(board: [[u8; 8]; 8]) -> (Vec<Piece>, Vec<Piece>) {
-    let mut player_1_pieces = Vec::new();
-    let mut player_2_pieces = Vec::new();
-    board.iter().enumerate().for_each(|(x, row)| {
-        row.iter().enumerate().for_each(|(y, square)| {
-            if *square == 1 {
-                player_1_pieces.push(Piece{x , y});
-            } else if *square == 2 {
-                player_2_pieces.push(Piece{x , y});               
-            }
-        })
-    });
-    (player_1_pieces, player_2_pieces)
-}
 
 pub fn definition() -> ValidatingEntryType {
     entry!(

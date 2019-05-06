@@ -17,7 +17,6 @@ use hdk::holochain_core_types::{
     entry::Entry,
     error::HolochainError,
     json::JsonString,
-    cas::content::AddressableContent,
 };
 
 
@@ -46,11 +45,6 @@ fn handle_make_move(new_move: MoveInput) -> ZomeApiResult<()> {
     // get all the moves from the DHT by following the hash chain
     let moves = game::get_moves(&new_move.game)?;
 
-    // commit the game every time for now
-    let game = game::get_game(&new_move.game)?;
-    let game_entry = Entry::App("game".into(), game.into());
-    hdk::commit_entry(&game_entry)?;
-
     // commit the latest move to local chain to allow validation of the next move (if one exists)
     let base_address = match moves.last() {
         Some(last_move) => {
@@ -58,7 +52,9 @@ fn handle_make_move(new_move: MoveInput) -> ZomeApiResult<()> {
             hdk::commit_entry(&new_move_entry)?
         }
         None => { // no moves have been made so commit the Game
-            new_move.game.clone()
+            let game = game::get_game(&new_move.game)?;
+            let game_entry = Entry::App("game".into(), game.into());
+            hdk::commit_entry(&game_entry)?
         }
     };
 

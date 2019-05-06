@@ -101,6 +101,7 @@ pub fn get_moves_local_chain(local_chain: Vec<Entry>, game_address: &Address) ->
         .filter(|game_move| {
             game_move.game == game_address.to_owned()
         })
+        .rev()
         .collect())
 }
 

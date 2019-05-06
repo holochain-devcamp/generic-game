@@ -71,11 +71,11 @@ fn is_players_turn(player: Address, game: Game, game_state: GameState) -> Result
 			}
 		},
 		None => {
-			// by convention player 1 (the creator) always starts
-			if game.player_1 == player {
+			// by convention player 2 makes the first move thus accepting the invitation to play
+			if game.player_2 == player {
 				Ok(())
 			} else {
-				Err("Player 1 must make the first move".into())
+				Err("Player 2 must make the first move".into())
 			}
 		},
 	}

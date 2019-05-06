@@ -10,7 +10,7 @@ const agentBob = Config.agent("bob")
 const dna = Config.dna(dnaPath)
 const instanceAlice = Config.instance(agentAlice, dna)
 const instanceBob = Config.instance(agentBob, dna)
-const scenario = new Scenario([instanceAlice, instanceBob], {debugLog: false})
+const scenario = new Scenario([instanceAlice, instanceBob], {debugLog: true})
 
 scenario.runTape("Can create a new game and make a move", async (t, { alice, bob }) => {
 
@@ -28,31 +28,49 @@ scenario.runTape("Can create a new game and make a move", async (t, { alice, bob
     return result
   }
 
-
   let create_result = await alice.callSync("main", "create_game", { opponent: bob.agentId, timestamp: 0 })
   console.log(create_result)
   t.equal(create_result.Ok.length, 46)
   let game_address = create_result.Ok
 
-
-  await makeMove(alice, {
-  	game: game_address,
-  	timestamp: 123,
-  	move_type: {MovePiece: { from: {x: 0, y: 0}, to: {x: 0, y: 0} }},
-  })
-  t.notEqual(lastResult().Ok, undefined)
-
-  await getState(alice, game_address)
-  t.equal(lastResult().Ok.moves.length, 1)
-
   await makeMove(bob, {
     game: game_address,
-    timestamp: 125,
+    timestamp: 0,
     move_type: {MovePiece: { from: {x: 0, y: 0}, to: {x: 0, y: 0} }},
   })
   t.notEqual(lastResult().Ok, undefined)
 
+  await makeMove(alice, {
+  	game: game_address,
+  	timestamp: 1,
+  	move_type: {MovePiece: { from: {x: 0, y: 0}, to: {x: 0, y: 0} }},
+  })
+  t.notEqual(lastResult().Ok, undefined)
+
+  await makeMove(bob, {
+    game: game_address,
+    timestamp: 2,
+    move_type: {MovePiece: { from: {x: 0, y: 0}, to: {x: 0, y: 0} }},
+  })
+  t.notEqual(lastResult().Ok, undefined)
+
+  await makeMove(alice, {
+    game: game_address,
+    timestamp: 2,
+    move_type: {MovePiece: { from: {x: 0, y: 0}, to: {x: 0, y: 0} }},
+  })
+  t.notEqual(lastResult().Ok, undefined)
+
+  await getState(alice, game_address)
+  t.equal(lastResult().Ok.moves.length, 4)
+
   // both agents should see the same game state
   t.deepEqual(await getState(bob, game_address), await getState(alice, game_address))
+
+
+  // finally print all the outputs
+  results.forEach((result, i) => {
+    console.log(`${i}: ${JSON.stringify(result, null, 2)}\n`)
+  })
 
 })

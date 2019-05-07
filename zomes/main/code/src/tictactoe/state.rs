@@ -11,11 +11,10 @@ use super::{
     validation::{Player, get_current_player},
 };
 
-pub const BOARD_SIZE: usize = 8;
-
-const WHITE_PIECE: char = '░';
-const BLACK_PIECE: char = '▓';
-const EMPTY_SPACE: char = ' ';
+pub const BOARD_SIZE: usize = 3;
+pub const PLAYER_1_MARK: char = 'O';
+pub const PLAYER_2_MARK: char = 'X';  //player 2 / Xs go first
+pub const EMPTY_SPACE: char = ' ';
 
 /**
  *
@@ -30,7 +29,6 @@ const EMPTY_SPACE: char = ' ';
 
 #[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub struct GameState {
-    pub complete: bool,
     pub moves: Vec<Move>,
     pub player_1: PlayerState,
     pub player_2: PlayerState,
@@ -40,51 +38,54 @@ pub struct GameState {
 pub struct PlayerState {
     pub pieces: Vec<Piece>,
     pub resigned: bool,
+    pub has_won: bool,
 }
 
+impl PlayerState {
+    pub fn initial() -> Self {
+        PlayerState {
+            pieces: Vec::new(),
+            resigned: false,
+            has_won: false,
+        }
+    }
+}
 
 impl GameState {
     pub fn initial() -> Self {
-        let p1 = PlayerState {
-            pieces: vec![
-                Piece{x: 0, y: 0}, Piece{x: 2, y: 0}, Piece{x: 4, y: 0}, Piece{x: 6, y: 0},
-                Piece{x: 1, y: 1}, Piece{x: 3, y: 1}, Piece{x: 5, y: 1}, Piece{x: 7, y: 1},
-                Piece{x: 0, y: 2}, Piece{x: 2, y: 2}, Piece{x: 4, y: 2}, Piece{x: 6, y: 2},
-            ],
-            resigned: false,
-        };
-        let p2 = PlayerState {
-            pieces: vec![
-                Piece{x: 1, y: 5}, Piece{x: 3, y: 5}, Piece{x: 5, y: 5}, Piece{x: 7, y: 5},
-                Piece{x: 0, y: 6}, Piece{x: 2, y: 6}, Piece{x: 4, y: 6}, Piece{x: 6, y: 6},
-                Piece{x: 1, y: 7}, Piece{x: 3, y: 7}, Piece{x: 5, y: 7}, Piece{x: 7, y: 7},
-            ],
-            resigned: false,
-        };
         GameState {
             moves: Vec::new(),
-            complete: false,
-            player_1: p1,
-            player_2: p2,
+            player_1: PlayerState::initial(),
+            player_2: PlayerState::initial(),
         }
     }
 
     pub fn render(&self) -> String {
         let board = board_sparse_to_dense(self);
-        let mut disp = "  x  0 1 2 3 4 5 6 7\ny\n".to_string();
+        let mut disp = String::new();
         for y in 0..BOARD_SIZE {
-            disp.push_str(&format!("{}   |", y));
             for x in 0..BOARD_SIZE {
                 let c = match board[x][y] {
-                    1 => WHITE_PIECE,
-                    2 => BLACK_PIECE,
+                    1 => PLAYER_1_MARK,
+                    2 => PLAYER_2_MARK,
                     _ => EMPTY_SPACE,
                 };
-                disp.push_str(&format!("{}|", c));
+                disp.push(c);
+                if x < BOARD_SIZE - 1 {
+                    disp.push('|');
+                }
             }
-            disp.push('\n');
+            if y < BOARD_SIZE - 1 {
+                disp.push_str("\n-----");
+                disp.push('\n');
+            }
         }
-        disp
+        if self.player_1.has_won {
+            disp.push_str("\nPlayer 1 wins!")
+        } else if self.player_2.has_won {
+            disp.push_str("\nPlayer 2 wins!")
+        }
+        disp    
     }
 }
 
@@ -94,15 +95,42 @@ pub fn state_reducer(game: Game, current_state: GameState, next_move: &Move) -> 
     let current_player = get_current_player(&game, &next_move.author).unwrap();
 
     match &next_move.move_type {
-        MoveType::MovePiece{to, from} => {
+        MoveType::Place{pos} => {
             let mut board = board_sparse_to_dense(&current_state);
             let mut moves = current_state.moves;
             moves.push(next_move.to_owned());
-            // make the move by deleting the piece at the from position and adding one at the to position
-            board[from.x][from.y] = 0;
-            board[to.x][to.y] = match current_player { Player::Player1 => 1, Player::Player2 => 2};
 
-            // check if any opponent pieces were taken in this move
+            // make the move by adding a new piece at the position
+            board[pos.x][pos.y] = match current_player { Player::Player1 => 1, Player::Player2 => 2};
+
+            // check if this resulted in a player victory
+            let mut diag_down = 0;
+            let mut diag_up = 0;
+            let mut across = [0; 3];
+            let mut down = [0; 3];
+            for x in 0..BOARD_SIZE {
+                for y in 0..BOARD_SIZE {
+                    let delta = match board[x][y] {1 => 1, 2 => -1, _ => 0};
+                    down[x] += delta;
+                    across[y] += delta;
+                    // diag down e.g. \
+                    if x == y {
+                        diag_down += delta;
+                    } //diag up  e.g. /
+                    else if x == (BOARD_SIZE - 1 - y) {
+                        diag_up += delta;
+                    }
+                }
+            }
+            let player_1_victory = across.iter().any(|e| *e == (BOARD_SIZE as i32)) 
+                                || down.iter().any(|e| *e == (BOARD_SIZE as i32));
+                                || diag_down == (BOARD_SIZE as i32);
+                                || diag_up == (BOARD_SIZE as i32);
+
+            let player_2_victory = across.iter().any(|e| *e == (-1*BOARD_SIZE as i32)) 
+                                || down.iter().any(|e| *e == (-1*BOARD_SIZE as i32));
+                                || diag_down == (-1*BOARD_SIZE as i32);
+                                || diag_up == (-1*BOARD_SIZE as i32);
 
             let (player_1_pieces, player_2_pieces) = board_dense_to_sparse(board);
 
@@ -110,14 +138,16 @@ pub fn state_reducer(game: Game, current_state: GameState, next_move: &Move) -> 
                 player_1: PlayerState {
                     pieces: player_1_pieces,
                     resigned: false,
+                    has_won: player_1_victory,
                 },
                 player_2: PlayerState {
                     pieces: player_2_pieces,
                     resigned: false,
+                    has_won: player_2_victory,
                 },
                 moves,
                 ..current_state
-            }
+            }        
         }
     }
 }

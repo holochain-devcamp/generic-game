@@ -95,6 +95,10 @@ fn handle_render_state(game_address: Address) -> ZomeApiResult<String> {
     Ok(handle_get_state(game_address)?.render())
 }
 
+fn handle_get_valid_moves() -> ZomeApiResult<Vec<MoveType>> {
+    Ok(MoveType::describe())
+}
+
 define_zome! {
     entries: [
        game::definition(),
@@ -124,9 +128,14 @@ define_zome! {
             outputs: |result: ZomeApiResult<String>|,
             handler: handle_render_state
         }
+        valid_moves: {
+            inputs: | |,
+            outputs: |result: ZomeApiResult<Vec<MoveType>>|,
+            handler: handle_get_valid_moves
+        }
     ]
 
     traits: {
-        hc_public [create_game, make_move, get_state, render_state]
+        hc_public [create_game, make_move, get_state, render_state, valid_moves]
     }
 }

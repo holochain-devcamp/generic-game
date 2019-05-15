@@ -17,6 +17,15 @@ pub enum MoveType {
     },
 }
 
+impl MoveType {
+	pub fn describe() -> Vec<MoveType> {
+		vec![
+			MoveType::Place{pos: Piece{x: 0, y: 0}}
+			// add the other variants here to add descriptors
+		]
+	}
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, DefaultJson, PartialEq)]
 pub struct Piece {
     pub x: usize,

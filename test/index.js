@@ -101,6 +101,12 @@ scenario.runTape("Can create a new game of tic-tac-toe and make a move", async (
     return result
   }
 
+  // can get the descripton of the valid moves
+  let valid_moves_result = await alice.callSync("main", "valid_moves", {})
+  console.log(JSON.stringify(valid_moves_result.Ok))
+  t.equal(valid_moves_result.Ok.length, 1)
+
+
   let create_result = await alice.callSync("main", "create_game", { opponent: bob.agentId, timestamp: 0 })
   console.log(create_result)
   t.equal(create_result.Ok.length, 46)

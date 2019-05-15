@@ -53,7 +53,12 @@ fn main() -> io::Result<()> {
             	match valid_moves(json!({})) {
             		Ok(result) => {
 		            	println!("The valid moves are:");
-		            	println!("{:?}", result);
+
+		            	result["Ok"].as_array().unwrap()
+		            	.iter()
+		            	.for_each(|elem| {
+		            		println!("{}", elem);
+		            	});
             		},
             		Err(e) => {
             			println!("Unable to make call to holochain conductor. Make sure the it is running and the URL and instanceId are correct.");
@@ -129,14 +134,17 @@ fn holochain_call_generator(
 				"function": func,
 				"params": params
 			}
-		});
+		})
 	};
 
 	Box::new(move |params| {
+
 		client.post(url.clone())
 		    .json(&make_rpc_call(params))
 		    .send()?
 		    .json()
+		    .map(|r: serde_json::Value| r["result"].clone())
+		    .map(|s| serde_json::from_str(s.as_str().unwrap()).unwrap())
 	})
 
 }

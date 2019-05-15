@@ -1,4 +1,7 @@
 use std::io;
+use std::iter::repeat;
+use std::time::{self, SystemTime, UNIX_EPOCH};
+use std::thread;
 use serde_json::json;
 use structopt::StructOpt;
 use linefeed::{Interface, ReadResult};
@@ -12,11 +15,20 @@ struct Cli {
 	instance: String,
 }
 
+static COMMANDS: &[(&str, &str)] = &[
+    ("help",             "Displays this the help page"),
+    ("set_game",         "Set the game to make moves against, usage: set_game <game_address>"),
+    ("new_game",         "Create a new game to play with an opponent, usage: new_game <opponent_address>"),
+    ("moves",            "Display the set of moves this game supports"),
+    ("make_move",        "Make a move in this game, usage: make_move <move_json>"),
+    ("exit",             "Exit this CLI. Holochain will persist state so games can be resumed later."),
+];
+
 fn main() -> io::Result<()> {
     let cli = Cli::from_args();
-    println!("{:?}", cli);
 
     // create the functions required for playing the game
+    let whoami = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "whoami".into());
     let valid_moves = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "valid_moves".into());
     let make_move = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "make_move".into());
     let create_game = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "create_game".into());
@@ -24,9 +36,27 @@ fn main() -> io::Result<()> {
 
     let interface = Interface::new("Holochain generic game")?;
 
+    println!("");
+    println!("");
+    println!("{}", repeat('#').take(70).collect::<String>());
     println!("CLI interface for games written using the Holochain Generic Game framework.");
     println!("Enter \"help\" for a list of commands.");
     println!("Press Ctrl-D or enter \"quit\" to exit.");
+    println!("{}", repeat('#').take(70).collect::<String>());
+    println!("");
+    println!("");
+
+    match whoami(json!({})) {
+    	Ok(agent_addr) => {
+    		println!("Your agent address is {}\n\nSend this to other players so they can invite you to a game.", agent_addr);
+    	},
+    	Err(_e) => {
+    		println!("No holochain instance named {} running on {}", cli.instance, cli.url);
+    		panic!();
+    	}
+    }
+
+    println!("");
     println!("");
 
 	interface.set_prompt("No game> ")?;
@@ -35,31 +65,38 @@ fn main() -> io::Result<()> {
 
  	while let ReadResult::Input(line) = interface.read_line()? {
 
+        if !line.trim().is_empty() {
+            interface.add_history_unique(line.clone());
+		}
+
         let (cmd, args) = split_first_word(&line);
 
         match cmd {
             "help" => {
-                println!("This is where it will print help commands")
-            }
+                println!("Holochain generic game commands:");
+                println!();
+                for &(cmd, help) in COMMANDS {
+                    println!("  {:15} - {}", cmd, help);
+                }
+                println!();
+			}
             "set_game" => {
             	if is_hash(args) {
             		println!("Setting current game hash to {}", args);
             		current_game = Some(args.into());
             	} else {
-            		println!("argument does not appear to be a valid address")
+            		println!("argument must be a valid address")
             	}
             }
             "new_game" => {
-            	if is_hash(args) {
+            	if is_agent_addr(args) {
             		let result = create_game(json!({
             			"opponent": args,
-            			"timestamp": 0,
+            			"timestamp": current_timestamp()
             		}));
             		match result {
             			Ok(result) => {
-            				current_game = result["Ok"].as_str().map(|s| s.to_string());
-            				let render_result = render_game(json!({"game_address": current_game.clone().unwrap()})).unwrap();
-            				println!("{}", render_result["Ok"].as_str().unwrap());
+            				current_game = result.as_str().map(|s| s.to_string());
             			},
             			Err(e) => {
             				println!("{:?}", e);
@@ -74,7 +111,7 @@ fn main() -> io::Result<()> {
             		Ok(result) => {
 		            	println!("The valid moves are:");
 
-		            	result["Ok"].as_array().unwrap()
+		            	result.as_array().unwrap()
 		            	.iter()
 		            	.for_each(|elem| {
 		            		println!("{}", elem);
@@ -88,18 +125,21 @@ fn main() -> io::Result<()> {
             },
             "make_move" => {
             	if let Some(current_game) = current_game.clone() {
+            		let move_json: serde_json::Value = serde_json::from_str(args).unwrap();
 	            	println!("making move: {:?}", args);
 	            	let result = make_move(json!({
 		            	"game_move": {
 		            		"game": current_game,
-		            		"move_type": args,
-		            		"timestamp": 0,
+		            		"move_type": move_json,
+		            		"timestamp": current_timestamp()
 		            	}
 	            	}));
 	            	match result {
 	            		Ok(result) => {
 			            	println!("Move made successfully");
 			            	println!("{:?}", result);
+			            	// wait a bit so it displays correctly
+							thread::sleep(time::Duration::from_millis(3000));
 	            		},
 	            		Err(e) => {
 	            			println!("Unable to make move on this game.");
@@ -111,7 +151,10 @@ fn main() -> io::Result<()> {
             	}
             },
             "exit" => {
-            	println!("You can resume any game at a later date. Bye!");
+            	if let Some(current_game) = current_game.clone() {
+					println!("You can resume this game at a later date by using:\n\"set_game {}\"", current_game);
+            	}
+            	println!("Bye!");
             	break
             }
             _ => {
@@ -121,12 +164,16 @@ fn main() -> io::Result<()> {
 
 		if let Some(current_game) = current_game.clone() {
  			interface.set_prompt(&format!("{}> ", current_game))?;
+ 			match render_game(json!({"game_address": current_game.clone()})) {
+ 				Ok(render_result) => {
+            		println!("{}", render_result.as_str().unwrap());
+ 				},
+ 				Err(_e) => {
+ 					println!("No game is currently visible with that address.")
+ 				}
+ 			}
  		}
 	}
-
-
-    // let res = make_move(json!({}));
-    // println!("{:?}", res)
     Ok(())
 }
 
@@ -142,7 +189,7 @@ fn holochain_call_generator(
 	instance: String,
 	zome: String,
 	func: String,
-) -> Box<Fn(serde_json::Value) -> reqwest::Result<serde_json::Value>> {
+) -> Box<Fn(serde_json::Value) -> Result<serde_json::Value, String>> {
 
 
 	let client = reqwest::Client::new();
@@ -162,16 +209,23 @@ fn holochain_call_generator(
 	};
 
 	Box::new(move |params| {
-
-		client.post(url.clone())
+		let call_result: serde_json::Value = client.post(url.clone())
 		    .json(&make_rpc_call(params))
-		    .send()?
+		    .send().map_err(|e| e.to_string())?
 		    .json()
 		    .map(|r: serde_json::Value| {
-		    	println!("{:?}", r); 
+		    	// println!("{}", r);
 		    	r["result"].clone()
 		    })
 		    .map(|s| serde_json::from_str(s.as_str().unwrap()).unwrap())
+		    .map_err(|e| e.to_string())?;
+
+		// deal with the json encoded holochain error responses
+		if call_result.get("Ok").is_some() {
+			Ok(call_result["Ok"].clone())
+		} else {
+			Err(call_result["Err"].to_string())
+		}
 	})
 
 }
@@ -188,3 +242,12 @@ fn split_first_word(s: &str) -> (&str, &str) {
 fn is_hash(s: &str) -> bool {
 	s.starts_with("Qm") && s.len() == 46
 }
+
+fn is_agent_addr(s: &str) -> bool {
+	s.starts_with("Hc") && s.len() == 63
+}
+
+fn current_timestamp() -> u32 {
+	SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as u32
+}
+

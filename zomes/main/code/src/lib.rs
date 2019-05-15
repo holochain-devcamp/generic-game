@@ -99,6 +99,10 @@ fn handle_get_valid_moves() -> ZomeApiResult<Vec<MoveType>> {
     Ok(MoveType::describe())
 }
 
+fn handle_whoami() -> ZomeApiResult<Address> {
+    Ok(AGENT_ADDRESS.to_string().into())
+}
+
 define_zome! {
     entries: [
        game::definition(),
@@ -133,9 +137,14 @@ define_zome! {
             outputs: |result: ZomeApiResult<Vec<MoveType>>|,
             handler: handle_get_valid_moves
         }
+        whoami: {
+            inputs: | |,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: handle_whoami
+        }
     ]
 
     traits: {
-        hc_public [create_game, make_move, get_state, render_state, valid_moves]
+        hc_public [create_game, make_move, get_state, render_state, valid_moves, whoami]
     }
 }

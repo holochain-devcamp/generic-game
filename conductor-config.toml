@@ -1,0 +1,63 @@
+[[dnas]]
+id = "game-dna"
+file = "./dist/generic-game.dna.json"
+hash = "QmDontCheck"
+
+
+
+
+[[agents]]
+id = "test_agent1"
+name = "HoloTester1"
+public_address = "HcScjcgKqXC5pmfvka9DmtEJwVr548yd86UPtJGGoue9ynuikuRTN7oE5zcjgbi"
+keystore_file = "./agent1.keystore"
+
+[[agents]]
+id = "test_agent2"
+name = "HoloTester2"
+public_address = "HcScidPSdAT43q9qirJwt5rHJYjjsvougV3jgSBwdJujszw3bBu5Mktr74Rgnea"
+keystore_file = "./agent2.keystore"
+
+
+
+
+[[instances]]
+id = "ttt1"
+dna = "game-dna"
+agent = "test_agent1"
+[instances.logger]
+type = "simple"
+file = "app_spec.log"
+[instances.storage]
+type = "memory"
+path = "tmp-storage"
+
+[[instances]]
+id = "ttt2"
+dna = "game-dna"
+agent = "test_agent2"
+[instances.logger]
+type = "simple"
+file = "app_spec.log"
+[instances.storage]
+type = "memory"
+path = "tmp-storage"
+
+
+
+
+[[interfaces]]
+id = "http-interface1"
+[interfaces.driver]
+type = "http"
+port = 3000
+[[interfaces.instances]]
+id = "ttt1"
+
+[[interfaces]]
+id = "http-interface2"
+[interfaces.driver]
+type = "http"
+port = 3001
+[[interfaces.instances]]
+id = "ttt2"

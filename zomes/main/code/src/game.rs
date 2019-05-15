@@ -125,7 +125,11 @@ pub fn definition() -> ValidatingEntryType {
 
         validation: | validation_data: hdk::EntryValidationData<Game>| {
             match validation_data {
-                EntryValidationData::Create{entry: _, validation_data: _} => {
+                EntryValidationData::Create{entry, validation_data: _} => {
+                    let game = entry as Game;
+                    if game.player_1 == game.player_2 {
+                        return Err("Player 1 and Player 2 must be different agents.".into())
+                    }
                     Ok(())
                 },
                 _ => {

@@ -19,7 +19,7 @@ fn main() -> io::Result<()> {
     // create the functions required for playing the game
     let valid_moves = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "valid_moves".into());
     let make_move = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "make_move".into());
-    // let new_game = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "new_game".into());
+    let create_game = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "create_game".into());
     // let render_game = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "render_state".into());
 
     let interface = Interface::new("Holochain generic game")?;
@@ -42,11 +42,29 @@ fn main() -> io::Result<()> {
                 println!("This is where it will print help commands")
             }
             "set_game" => {
-            	if args.starts_with("Qm") && args.len() == 46 {
+            	if is_hash(args) {
             		println!("Setting current game hash to {}", args);
             		current_game = Some(args.into());
             	} else {
             		println!("argument does not appear to be a valid address")
+            	}
+            }
+            "new_game" => {
+            	if is_hash(args) {
+            		let result = create_game(json!({
+            			"opponent": args,
+            			"timestamp": 0,
+            		}));
+            		match result {
+            			Ok(result) => {
+            				current_game = result["Ok"].as_str().map(|s| s.to_string());
+            			},
+            			Err(e) => {
+            				println!("{:?}", e);
+            			}
+            		}
+            	} else {
+            		println!("argument must be valid agent address of an opponent.")
             	}
             }
             "moves" => {
@@ -67,23 +85,27 @@ fn main() -> io::Result<()> {
             	};
             },
             "make_move" => {
-            	match serde_json::from_str(args) {
-            		Ok(move_json) => {
-		            	println!("making move: {:?}", move_json);
-		            	match make_move(move_json) {
-		            		Ok(result) => {
-				            	println!("Move made successfully");
-				            	println!("{:?}", result);
-		            		},
-		            		Err(e) => {
-		            			println!("Unable to make move on this game.");
-		            			println!("{:?}", e);
-		            		}
-		            	};
-            		},
-            		Err(e) => {
-            			println!("The move was not valid JSON. {:?}", e)
-            		}
+            	if let Some(current_game) = current_game.clone() {
+	            	println!("making move: {:?}", args);
+	            	let result = make_move(json!({
+		            	"game_move": {
+		            		"game": current_game,
+		            		"move_type": args,
+		            		"timestamp": 0,
+		            	}
+	            	}));
+	            	match result {
+	            		Ok(result) => {
+			            	println!("Move made successfully");
+			            	println!("{:?}", result);
+	            		},
+	            		Err(e) => {
+	            			println!("Unable to make move on this game.");
+	            			println!("{:?}", e);
+	            		}
+	            	};
+            	} else {
+            		println!("No game set to make moves on. use the \"set_game\" command.");
             	}
             },
             "exit" => {
@@ -143,7 +165,10 @@ fn holochain_call_generator(
 		    .json(&make_rpc_call(params))
 		    .send()?
 		    .json()
-		    .map(|r: serde_json::Value| r["result"].clone())
+		    .map(|r: serde_json::Value| {
+		    	println!("{:?}", r); 
+		    	r["result"].clone()
+		    })
 		    .map(|s| serde_json::from_str(s.as_str().unwrap()).unwrap())
 	})
 
@@ -156,4 +181,8 @@ fn split_first_word(s: &str) -> (&str, &str) {
         Some(pos) => (&s[..pos], s[pos..].trim_start()),
         None => (s, "")
     }
+}
+
+fn is_hash(s: &str) -> bool {
+	s.starts_with("Qm") && s.len() == 46
 }

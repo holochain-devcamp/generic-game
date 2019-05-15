@@ -20,7 +20,7 @@ fn main() -> io::Result<()> {
     let valid_moves = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "valid_moves".into());
     let make_move = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "make_move".into());
     let create_game = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "create_game".into());
-    // let render_game = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "render_state".into());
+    let render_game = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "render_state".into());
 
     let interface = Interface::new("Holochain generic game")?;
 
@@ -58,6 +58,8 @@ fn main() -> io::Result<()> {
             		match result {
             			Ok(result) => {
             				current_game = result["Ok"].as_str().map(|s| s.to_string());
+            				let render_result = render_game(json!({"game_address": current_game.clone().unwrap()})).unwrap();
+            				println!("{}", render_result["Ok"].as_str().unwrap());
             			},
             			Err(e) => {
             				println!("{:?}", e);

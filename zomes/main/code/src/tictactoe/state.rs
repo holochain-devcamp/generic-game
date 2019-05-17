@@ -2,6 +2,7 @@ use hdk::holochain_core_types::{
     error::HolochainError,
     json::JsonString,
 };
+use hdk::AGENT_ADDRESS;
 
 use crate::game_move::Move;
 use crate::game::Game;
@@ -38,7 +39,7 @@ pub struct GameState {
 pub struct PlayerState {
     pub pieces: Vec<Piece>,
     pub resigned: bool,
-    pub has_won: bool,
+    pub winner: bool,
 }
 
 impl PlayerState {
@@ -46,7 +47,7 @@ impl PlayerState {
         PlayerState {
             pieces: Vec::new(),
             resigned: false,
-            has_won: false,
+            winner: false,
         }
     }
 }
@@ -61,32 +62,45 @@ impl GameState {
     }
 
     pub fn render(&self) -> String {
+        let mut disp = "\n".to_string();
+
+        if let Some(last_move) = self.moves.last() {
+            if last_move.author.to_string() == AGENT_ADDRESS.to_string() {
+                disp.push_str("It is your opponents turn \n");
+            } else {
+                disp.push_str("It is your turn \n");
+            }
+        } else {
+            disp.push_str("Non-creator must make the first move \n");        
+        }
+        disp.push('\n');
+        disp.push_str("  x  0 1 2\ny\n");
         let board = board_sparse_to_dense(self);
-        let mut disp = String::new();
         for y in 0..BOARD_SIZE {
+            disp.push_str(&format!("{}   |", y));
             for x in 0..BOARD_SIZE {
                 let c = match board[x][y] {
                     1 => PLAYER_1_MARK,
                     2 => PLAYER_2_MARK,
                     _ => EMPTY_SPACE,
                 };
-                disp.push(c);
-                if x < BOARD_SIZE - 1 {
-                    disp.push('|');
-                }
+                disp.push_str(&format!("{}|", c));
             }
-            if y < BOARD_SIZE - 1 {
-                disp.push_str("\n-----");
-                disp.push('\n');
-            }
+            disp.push('\n');
         }
-        if self.player_1.has_won {
-            disp.push_str("\nPlayer 1 wins!")
-        } else if self.player_2.has_won {
-            disp.push_str("\nPlayer 2 wins!")
+
+        if self.player_1.resigned {
+            disp.push_str(&format!("Game over: Player 1 has resigned!\n"));
+        } else if self.player_2.resigned {
+            disp.push_str(&format!("Game over: Player 2 has resigned!\n"));
+        } else if self.player_1.winner {
+            disp.push_str(&format!("Game over: Player 1 is the winner!\n"));
+        } else if self.player_2.winner {
+            disp.push_str(&format!("Game over: Player 2 is the winner!\n"));
         }
-        disp    
+        disp
     }
+
 }
 
 /// takes a current game state and a move and progresses the state
@@ -138,12 +152,12 @@ pub fn state_reducer(game: Game, current_state: GameState, next_move: &Move) -> 
                 player_1: PlayerState {
                     pieces: player_1_pieces,
                     resigned: false,
-                    has_won: player_1_victory,
+                    winner: player_1_victory,
                 },
                 player_2: PlayerState {
                     pieces: player_2_pieces,
                     resigned: false,
-                    has_won: player_2_victory,
+                    winner: player_2_victory,
                 },
                 moves,
                 ..current_state

@@ -2,6 +2,7 @@ use hdk::holochain_core_types::{
     error::HolochainError,
     json::JsonString,
 };
+use hdk::AGENT_ADDRESS;
 
 use crate::game_move::Move;
 use crate::game::Game;
@@ -71,8 +72,21 @@ impl GameState {
     }
 
     pub fn render(&self) -> String {
+        let mut disp = "\n".to_string();
+
+        if let Some(last_move) = self.moves.last() {
+            if last_move.author.to_string() == AGENT_ADDRESS.to_string() {
+                disp.push_str("It is your opponents turn \n");
+            } else {
+                disp.push_str("It is your turn \n");
+            }
+        } else {
+            disp.push_str("Non-creator must make the first move \n");        
+        }
+        disp.push('\n');
+
+        disp.push_str("  x  0 1 2 3 4 5 6 7\ny\n");
         let board = board_sparse_to_dense(self);
-        let mut disp = "  x  0 1 2 3 4 5 6 7\ny\n".to_string();
         for y in 0..BOARD_SIZE {
             disp.push_str(&format!("{}   |", y));
             for x in 0..BOARD_SIZE {

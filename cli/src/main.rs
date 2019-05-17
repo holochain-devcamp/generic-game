@@ -17,7 +17,7 @@ struct Cli {
 
 static COMMANDS: &[(&str, &str)] = &[
     ("help",             "Displays this the help page"),
-    ("set_game",         "Set the game to make moves against, usage: set_game <game_address>"),
+    ("join_game",        "Set the game to make moves against, usage: join_game <game_address>"),
     ("new_game",         "Create a new game to play with an opponent, usage: new_game <opponent_address>"),
     ("moves",            "Display the set of moves this game supports"),
     ("make_move",        "Make a move in this game, usage: make_move <move_json>"),
@@ -41,6 +41,7 @@ fn main() -> io::Result<()> {
     println!("{}", repeat('#').take(70).collect::<String>());
     println!("CLI interface for games written using the Holochain Generic Game framework.");
     println!("Enter \"help\" for a list of commands.");
+    println!("Use \"create_game <agent_id>\" or \"join_game <game_address>\" to start or join a game.");
     println!("Press Ctrl-D or enter \"quit\" to exit.");
     println!("{}", repeat('#').take(70).collect::<String>());
     println!("");
@@ -51,8 +52,8 @@ fn main() -> io::Result<()> {
     		println!("Your agent address is {}\n\nSend this to other players so they can invite you to a game.", agent_addr);
     	},
     	Err(_e) => {
-    		println!("No holochain instance named {} running on {}", cli.instance, cli.url);
-    		panic!();
+    		println!("No holochain instance named {} running on {}. Check the conductor is running and the instanceId in the conductor config is correct.", cli.instance, cli.url);
+    		return Ok(());
     	}
     }
 
@@ -71,7 +72,7 @@ fn main() -> io::Result<()> {
 
         let (cmd, args) = split_first_word(&line);
 
-        match cmd {
+        let result: Result<(), String> = match cmd {
             "help" => {
                 println!("Holochain generic game commands:");
                 println!();
@@ -79,13 +80,15 @@ fn main() -> io::Result<()> {
                     println!("  {:15} - {}", cmd, help);
                 }
                 println!();
+                Ok(())
 			}
-            "set_game" => {
+            "join_game" => {
             	if is_hash(args) {
             		println!("Setting current game hash to {}", args);
             		current_game = Some(args.into());
+                    Ok(())
             	} else {
-            		println!("argument must be a valid address")
+            		Err("argument must be a valid address".into())
             	}
             }
             "new_game" => {
@@ -94,82 +97,69 @@ fn main() -> io::Result<()> {
             			"opponent": args,
             			"timestamp": current_timestamp()
             		}));
-            		match result {
-            			Ok(result) => {
-            				current_game = result.as_str().map(|s| s.to_string());
-            			},
-            			Err(e) => {
-            				println!("{:?}", e);
-            			}
-            		}
+                    result.map(|result| {
+                        current_game = result.as_str().map(|s| s.to_string());
+                    })
             	} else {
-            		println!("argument must be valid agent address of an opponent.")
+            		Err("argument must be valid agent address of an opponent.".into())
             	}
             }
             "moves" => {
-            	match valid_moves(json!({})) {
-            		Ok(result) => {
-		            	println!("The valid moves are:");
-
-		            	result.as_array().unwrap()
-		            	.iter()
-		            	.for_each(|elem| {
-		            		println!("{}", elem);
-		            	});
-            		},
-            		Err(e) => {
-            			println!("Unable to make call to holochain conductor. Make sure the it is running and the URL and instanceId are correct.");
-            			println!("{:?}", e);
-            		}
-            	};
+            	valid_moves(json!({})).map(|result| {
+	            	println!("The valid moves are:");
+	            	result.as_array().unwrap()
+	            	.iter()
+	            	.for_each(|elem| {
+	            		println!("{}", elem);
+	            	});
+            	})
             },
             "make_move" => {
             	if let Some(current_game) = current_game.clone() {
             		let move_json: serde_json::Value = serde_json::from_str(args).unwrap();
 	            	println!("making move: {:?}", args);
-	            	let result = make_move(json!({
+	            	make_move(json!({
 		            	"game_move": {
 		            		"game": current_game,
 		            		"move_type": move_json,
 		            		"timestamp": current_timestamp()
 		            	}
-	            	}));
-	            	match result {
-	            		Ok(result) => {
-			            	println!("Move made successfully");
-			            	println!("{:?}", result);
-			            	// wait a bit so it displays correctly
-							thread::sleep(time::Duration::from_millis(3000));
-	            		},
-	            		Err(e) => {
-	            			println!("Unable to make move on this game.");
-	            			println!("{:?}", e);
-	            		}
-	            	};
-            	} else {
-            		println!("No game set to make moves on. use the \"set_game\" command.");
+	            	})).map(|result| {
+                        println!("Move made successfully");
+                        println!("{:?}", result);
+                        // wait a bit so it displays correctly
+                        thread::sleep(time::Duration::from_millis(3000));
+                    })
+                }
+            	else {
+            		Err("No game set to make moves on. use the \"join_game\" command.".into())
             	}
             },
             "exit" => {
             	if let Some(current_game) = current_game.clone() {
-					println!("You can resume this game at a later date by using:\n\"set_game {}\"", current_game);
+					println!("You can resume this game at a later date by using:\n\"join_game {}\"", current_game);
             	}
             	println!("Bye!");
             	break
             }
             _ => {
-            	println!("Invalid command!")
+            	Err("Invalid command!".into())
             }
-		}
+		};
 
-		if let Some(current_game) = current_game.clone() {
- 			interface.set_prompt(&format!("{}> ", current_game))?;
- 			match render_game(json!({"game_address": current_game.clone()})) {
+        if let Err(e) = result {
+            println!("Error: {}", e)
+        }
+
+		if let Some(current_game_string) = current_game.clone() {
+ 			interface.set_prompt(&format!("{}> ", current_game_string))?;
+ 			match render_game(json!({"game_address": current_game_string.clone()})) {
  				Ok(render_result) => {
             		println!("{}", render_result.as_str().unwrap());
  				},
  				Err(_e) => {
- 					println!("No game is currently visible with that address.")
+ 					println!("No game is currently visible with that address.");
+                    current_game = None;
  				}
  			}
  		}
@@ -178,11 +168,8 @@ fn main() -> io::Result<()> {
 }
 
 
-
 /**
- * @brief      Returns functions to make calls to a particular zome function on a url
- *
- * @return     { description_of_the_return_value }
+ * Returns functions to make calls to a particular zome function on a url
  */
 fn holochain_call_generator(
 	url: reqwest::Url, 
@@ -190,7 +177,6 @@ fn holochain_call_generator(
 	zome: String,
 	func: String,
 ) -> Box<Fn(serde_json::Value) -> Result<serde_json::Value, String>> {
-
 
 	let client = reqwest::Client::new();
 
@@ -214,21 +200,26 @@ fn holochain_call_generator(
 		    .send().map_err(|e| e.to_string())?
 		    .json()
 		    .map(|r: serde_json::Value| {
-		    	// println!("{}", r);
 		    	r["result"].clone()
 		    })
-		    .map(|s| serde_json::from_str(s.as_str().unwrap()).unwrap())
+		    .map(|s| serde_json::from_str(
+                s.as_str().expect(&format!("Holochain did not return a string result: {}", s))
+            ).expect(&format!("Holochain did not return a valid stringified JSON result: {}", s)))
 		    .map_err(|e| e.to_string())?;
 
 		// deal with the json encoded holochain error responses
-		if call_result.get("Ok").is_some() {
-			Ok(call_result["Ok"].clone())
+		if let Some(inner_result) = call_result.get("Ok") {
+			Ok(inner_result.clone())
 		} else {
 			Err(call_result["Err"].to_string())
 		}
 	})
 
 }
+
+/*===============================
+=            Helpers            =
+===============================*/
 
 fn split_first_word(s: &str) -> (&str, &str) {
     let s = s.trim();
@@ -251,3 +242,4 @@ fn current_timestamp() -> u32 {
 	SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as u32
 }
 
+/*=====  End of Helpers  ======*/

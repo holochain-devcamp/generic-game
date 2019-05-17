@@ -24,6 +24,10 @@ pub struct Game {
     pub created_at: u32,
 }
 
+/*=====================================
+=            DHT Functions            =
+=====================================*/
+
 /// Traverse the linked list rooted at a game to find all the moves
 pub fn get_moves(game_address: &Address) -> ZomeApiResult<Vec<Move>> {
     match hdk::get_links(game_address, "")?.addresses().into_iter().next() {
@@ -67,6 +71,14 @@ pub fn get_state(game_address: &Address) -> ZomeApiResult<GameState> {
 pub fn get_game(game_address: &Address) -> ZomeApiResult<Game> {
     utils::get_as_type(game_address.to_owned())
 }
+
+/*=====  End of DHT Functions  ======*/
+
+
+
+/*=============================================
+=            Local chain functions            =
+=============================================*/
 
 pub fn get_game_local_chain(local_chain: Vec<Entry>, game_address: &Address) -> ZomeApiResult<Game> {
     local_chain
@@ -112,6 +124,11 @@ pub fn get_state_local_chain(local_chain: Vec<Entry>, game_address: &Address) ->
     let new_state = moves.iter().fold(GameState::initial(), move |state, new_move| state_reducer(game.clone(), state, new_move));
     Ok(new_state)
 }
+
+
+/*=====  End of Local chain functions  ======*/
+
+
 
 
 pub fn definition() -> ValidatingEntryType {

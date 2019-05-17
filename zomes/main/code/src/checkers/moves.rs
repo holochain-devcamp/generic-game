@@ -16,6 +16,18 @@ pub enum MoveType {
         from: Piece,
         to: Piece,
     },
+    Resign,
+}
+
+impl MoveType {
+	pub fn describe() -> Vec<MoveType> {
+		vec![
+			MoveType::MovePiece{from: Piece{x: 0, y: 0}, to: Piece{x: 0, y: 0}},
+			MoveType::Resign,
+			// add the other variants here to add descriptors
+
+		]
+	}
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, DefaultJson, PartialEq)]

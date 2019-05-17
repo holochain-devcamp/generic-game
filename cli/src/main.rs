@@ -110,8 +110,9 @@ fn main() -> io::Result<()> {
 	            	result.as_array().unwrap()
 	            	.iter()
 	            	.for_each(|elem| {
-	            		println!("{}", elem);
+	            		println!("- {}", elem);
 	            	});
+                    println!();
             	})
             },
             "make_move" => {
@@ -124,11 +125,12 @@ fn main() -> io::Result<()> {
 		            		"move_type": move_json,
 		            		"timestamp": current_timestamp()
 		            	}
-	            	})).map(|result| {
-                        println!("Move made successfully");
-                        println!("{:?}", result);
+	            	})).map(|_| {
+                        println!("Move cast successfully");
+                        println!("Waiting for gossip...");
                         // wait a bit so it displays correctly
-                        thread::sleep(time::Duration::from_millis(3000));
+                        thread::sleep(time::Duration::from_millis(4000));
+                        println!("OK!")
                     })
                 }
             	else {

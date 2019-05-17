@@ -20,19 +20,19 @@ use hdk::holochain_core_types::{
 };
 
 // This is where you would import your own game State, MoveType and state_reducer
-// mod checkers;
-// pub use checkers::{
-//     GameState,
-//     MoveType,
-//     state_reducer,
-// };
-
-mod tictactoe;
-pub use tictactoe::{
+mod checkers;
+pub use checkers::{
     GameState,
     MoveType,
     state_reducer,
 };
+
+// mod tictactoe;
+// pub use tictactoe::{
+//     GameState,
+//     MoveType,
+//     state_reducer,
+// };
 
 
 mod game;

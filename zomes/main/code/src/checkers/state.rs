@@ -30,7 +30,6 @@ const EMPTY_SPACE: char = ' ';
 
 #[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub struct GameState {
-    pub complete: bool,
     pub moves: Vec<Move>,
     pub player_1: PlayerState,
     pub player_2: PlayerState,
@@ -40,6 +39,7 @@ pub struct GameState {
 pub struct PlayerState {
     pub pieces: Vec<Piece>,
     pub resigned: bool,
+    pub winner: bool,
 }
 
 
@@ -52,6 +52,7 @@ impl GameState {
                 Piece{x: 0, y: 2}, Piece{x: 2, y: 2}, Piece{x: 4, y: 2}, Piece{x: 6, y: 2},
             ],
             resigned: false,
+            winner: false,
         };
         let p2 = PlayerState {
             pieces: vec![
@@ -60,10 +61,10 @@ impl GameState {
                 Piece{x: 1, y: 7}, Piece{x: 3, y: 7}, Piece{x: 5, y: 7}, Piece{x: 7, y: 7},
             ],
             resigned: false,
+            winner: false,
         };
         GameState {
             moves: Vec::new(),
-            complete: false,
             player_1: p1,
             player_2: p2,
         }
@@ -84,6 +85,15 @@ impl GameState {
             }
             disp.push('\n');
         }
+        if self.player_1.resigned {
+            disp.push_str(&format!("Game over: Player 1 has resigned!\n"));
+        } else if self.player_2.resigned {
+            disp.push_str(&format!("Game over: Player 2 has resigned!\n"));
+        } else if self.player_1.winner {
+            disp.push_str(&format!("Game over: Player 1 is the winner!\n"));
+        } else if self.player_2.winner {
+            disp.push_str(&format!("Game over: Player 2 is the winner!\n"));
+        }
         disp
     }
 }
@@ -92,31 +102,43 @@ impl GameState {
 /// assumes that moves are totally valid by this stage
 pub fn state_reducer(game: Game, current_state: GameState, next_move: &Move) -> GameState {
     let current_player = get_current_player(&game, &next_move.author).unwrap();
-
+    let mut moves = current_state.moves.clone();
+    moves.push(next_move.to_owned());
+    
     match &next_move.move_type {
         MoveType::MovePiece{to, from} => {
             let mut board = board_sparse_to_dense(&current_state);
-            let mut moves = current_state.moves;
-            moves.push(next_move.to_owned());
             // make the move by deleting the piece at the from position and adding one at the to position
             board[from.x][from.y] = 0;
             board[to.x][to.y] = match current_player { Player::Player1 => 1, Player::Player2 => 2};
 
-            // check if any opponent pieces were taken in this move
+            // TODO: check if any opponent pieces were taken in this move
+
+            // TODO: Check if either player has won
 
             let (player_1_pieces, player_2_pieces) = board_dense_to_sparse(board);
 
             GameState{
                 player_1: PlayerState {
                     pieces: player_1_pieces,
-                    resigned: false,
+                    ..current_state.player_1
                 },
                 player_2: PlayerState {
                     pieces: player_2_pieces,
-                    resigned: false,
+                    ..current_state.player_2
                 },
                 moves,
                 ..current_state
+            }
+        },
+        MoveType::Resign => {
+            match current_player {
+                Player::Player1 => {
+                    GameState{ player_1: PlayerState{resigned: true, ..current_state.player_1}, moves, ..current_state}
+                },
+                Player::Player2 => {
+                    GameState{ player_2: PlayerState{resigned: true, ..current_state.player_2}, moves, ..current_state}
+                }
             }
         }
     }

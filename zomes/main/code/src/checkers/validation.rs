@@ -30,9 +30,14 @@ impl Move {
     pub fn is_valid(&self, game: Game, game_state: GameState) -> Result<(), String> {
         hdk::debug(format!("{:?}", game_state)).unwrap();
         let current_player = get_current_player(&game, &self.author)?;
+
+        // these rules apply always
+        is_players_turn(self.author.clone(), game, &game_state)?;
+        has_not_resigned(&current_player, &game_state)?;
+
+        // move type specific validation
         match &self.move_type {
             MoveType::MovePiece{from, to} => {
-                is_players_turn(self.author.clone(), game, &game_state)?;
                 from.is_in_bounds()?;
                 to.is_in_bounds()?;
                 from.is_piece_beloning_to_player(&current_player, &game_state)?;
@@ -40,7 +45,8 @@ impl Move {
                 from.can_move_to(to, &current_player, &game_state)?;
                 hdk::debug("Validation Success!").unwrap();
                 Ok(())
-            }
+            },
+            MoveType::Resign => Ok(())
         }
     }
 }
@@ -86,6 +92,18 @@ fn is_players_turn(player: Address, game: Game, game_state: &GameState) -> Resul
     }
 }
 
+fn has_not_resigned(player: &Player, game_state: &GameState) -> Result<(), String> {
+    let resigned = match player {
+        Player::Player1 => game_state.player_1.resigned,
+        Player::Player2 => game_state.player_2.resigned
+    };
+    if resigned {
+        Err("Player has resigned and cannot make further moves".into())
+    } else {
+        Ok(())
+    }
+}
+
 impl Piece {
     fn is_in_bounds(&self) -> Result<(), String> {
         if self.x < BOARD_SIZE 
@@ -106,8 +124,7 @@ impl Piece {
         }
     }
 
-    fn can_move_to(&self, to: &Piece, player: &Player, game_state: &GameState) -> Result<(), String> {
-        let board = board_sparse_to_dense(game_state);
+    fn can_move_to(&self, to: &Piece, player: &Player, _game_state: &GameState) -> Result<(), String> {
         // pawns can only move:
         // sideways by 1 square
         if !(to.x == self.x + 1 || to.x == self.x - 1) {

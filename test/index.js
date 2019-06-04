@@ -38,8 +38,6 @@ const getState = async (agent, game_address) => {
 }
 
 
-
-
 scenario.runTape("Can create a new game of checkers and make a move", async (t, { alice, bob }) => {
 
   let game_address = await createGame(alice, bob);
@@ -83,4 +81,27 @@ scenario.runTape("Can create a new game of checkers and make a move", async (t, 
     console.log(`${i}: ${JSON.stringify(result, null, 2)}\n`)
   })
 
+})
+
+// test the matchmaking
+scenario.runTape("Bob can accept Alices proposal, create a game and Alice can see the game", async (t, { alice, bob }) => {
+  const addr = await alice.callSync("main", "create_proposal", {message : "sup"})
+  t.equal(addr.Ok.length, 46, "Proposal was created successfully")
+
+  const proposals = await bob.callSync("main", "get_proposals", {})
+  t.equal(proposals.Ok.length, 1, "Bob could retrieve Alices Proposal")
+
+  const acceptance = await bob.callSync("main", "accept_proposal", { proposal: proposals.Ok[0], created_at: 0 })
+  t.notEqual(acceptance.Ok, undefined, "Bob could accept the proposal by creating a game") // check it returned Ok
+
+  const games = await bob.callSync("main", "check_responses", { proposal_addr: addr.Ok })
+  t.deepEqual(
+    games.Ok, 
+    [{
+      player_1: bob.agentId,
+      player_2: alice.agentId,
+      created_at: 0,
+    }],
+    "The game was created as expected"
+  )
 })

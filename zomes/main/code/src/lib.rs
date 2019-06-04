@@ -39,6 +39,7 @@ pub use checkers::{
 
 mod game;
 mod game_move;
+mod matchmaking;
 
 use game::Game;
 use game_move::{Move, MoveInput};
@@ -63,6 +64,16 @@ pub mod main {
     #[entry_def]
     fn game_move_entry_def() -> ValidatingEntryType {
         game_move::definition()
+    }
+
+    #[entry_def]
+    fn game_proposal_def() -> ValidatingEntryType {
+        matchmaking::game_proposal_def()
+    }
+
+    #[entry_def]
+    fn anchor_def() -> ValidatingEntryType {
+        matchmaking::anchor_def()
     }
 
     /*=====  End of Entry Definitions  ======*/
@@ -140,5 +151,30 @@ pub mod main {
         Ok(AGENT_ADDRESS.to_string().into())
     }
 
+
+    #[zome_fn("hc_public")]
+    fn create_proposal(message: String) -> ZomeApiResult<Address> {
+        matchmaking::handle_create_proposal(message)
+    }
+
+    #[zome_fn("hc_public")]
+    fn get_proposals() -> ZomeApiResult<Vec<matchmaking::GameProposal>> {
+        matchmaking::handle_get_proposals()
+    }
+
+    #[zome_fn("hc_public")]
+    fn accept_proposal(proposal: matchmaking::GameProposal, created_at: u32) -> ZomeApiResult<()> {
+        matchmaking::handle_accept_proposal(proposal, created_at)
+    }
+
+    #[zome_fn("hc_public")]
+    fn check_responses(proposal_addr: Address) -> ZomeApiResult<Vec<Game>> {
+        matchmaking::handle_check_responses(proposal_addr)
+    }
+
+    #[zome_fn("hc_public")]
+    fn remove_proposal(proposal_addr: Address) -> ZomeApiResult<Address> {
+        matchmaking::handle_remove_proposal(proposal_addr)
+    }
     /*=====  End of Zome functions  ======*/
 }

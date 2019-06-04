@@ -18,7 +18,7 @@ const scenario = new Scenario([instanceAlice, instanceBob], {debugLog: false})
 let results = []
 const lastResult = (back=0) => results[results.length-1-back]
 const makeMove = async (agent, game_move) => {
-  const result = await agent.callSync("main", "make_move", { game_move })
+  const result = await agent.callSync("main", "make_move", { new_move: game_move })
   results.push(result)
   return result
 }

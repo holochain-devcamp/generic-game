@@ -30,12 +30,12 @@ pub struct Game {
 
 /// Traverse the linked list rooted at a game to find all the moves
 pub fn get_moves(game_address: &Address) -> ZomeApiResult<Vec<Move>> {
-    match hdk::get_links(game_address, "")?.addresses().into_iter().next() {
+    match hdk::get_links(game_address, None, None)?.addresses().into_iter().next() {
         Some(first_move) => {
             let mut move_addresses = vec![first_move];
             let mut more = true;
             while more {
-                more = match hdk::get_links(move_addresses.last().unwrap(), "")?.addresses().into_iter().next() {
+                more = match hdk::get_links(move_addresses.last().unwrap(), None, None)?.addresses().into_iter().next() {
                     Some(addr) => {
                         move_addresses.push(addr.clone());
                         true

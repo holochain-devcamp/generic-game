@@ -78,9 +78,9 @@ scenario.runTape("Can create a new game of checkers and make a move", async (t, 
   t.deepEqual(await getState(bob, game_address), await getState(alice, game_address), "Alice and Bob both see the same game state")
 
 
-  // // finally print all the outputs
-  // results.forEach((result, i) => {
-  //   console.log(`${i}: ${JSON.stringify(result, null, 2)}\n`)
-  // })
+  // finally print all the outputs
+  results.forEach((result, i) => {
+    console.log(`${i}: ${JSON.stringify(result, null, 2)}\n`)
+  })
 
 })

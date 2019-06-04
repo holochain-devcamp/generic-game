@@ -44,9 +44,9 @@ fn main() -> io::Result<()> {
     // matchmaking funcs
     let create_proposal = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "create_proposal".into());
     let get_proposals = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "get_proposals".into());
-    let _accept_proposal = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "accept_proposal".into());
+    let accept_proposal = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "accept_proposal".into());
     let check_responses = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "check_responses".into());
-    let _remove_proposal = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "remove_proposal".into());
+    let remove_proposal = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "remove_proposal".into());
    
 
     let interface = Interface::new("Holochain generic game")?;
@@ -160,25 +160,34 @@ fn main() -> io::Result<()> {
             },
             "get_proposals" => {
                 let result = get_proposals(json!({})).unwrap();
-                result.as_array().unwrap().iter().enumerate().for_each(|(i, proposal)| {
-                    println!("{}: --- Agent: {}, message: {}", i, proposal["agent"], proposal["message"]);
-
+                println!("Current game proposals: \n");
+                result.as_array().unwrap().iter().for_each(|r| {
+                    println!("[{}] : {{ Agent: {}, Message: {} }}", r["address"].as_str().unwrap(), r["entry"]["agent"], r["entry"]["message"]);
                 });
+                println!("\n");
                 Ok(())
             },
             "accept_proposal" => {
-                Ok(())
+                accept_proposal(json!({"proposal_addr": args, "created_at": current_timestamp()})).map(|game_addr| {
+                    println!("Proposal accepted. Game created with address: {}", game_addr);
+                    current_game = Some(game_addr.as_str().unwrap().into());
+                })
             },
             "check_responses" => {
-                let result = check_responses(json!({})).unwrap();
-                result.as_array().unwrap().iter().enumerate().for_each(|(i, response)| {
-                    println!("{}: --- GameHash: {}", i, response["agent"]);
-
+                let result = check_responses(json!({"proposal_addr": args})).unwrap();
+                println!("Proposal has the following responses: \n");
+                result.as_array().unwrap().iter().for_each(|response| {
+                    println!("[{}] : Agent: {}", response["address"], response["entry"]["player_1"]);
                 });
+                println!("use \"join_game\" with any of the listed addresses to join: \n");
                 Ok(())            
             },
             "remove_proposal" => {
+                println!("NOT IMPLEMENTED - this has been disabled until deletion but is fixed.");
                 Ok(())
+                // remove_proposal(json!({"proposal_addr": args})).map(|_| {
+                //     println!("Proposal successfully marked as deleted\n");
+                // })
             },
             "exit" => {
             	if let Some(current_game) = current_game.clone() {
@@ -234,7 +243,7 @@ fn holochain_call_generator(
 				"instance_id": instance,
 				"zome": zome,
 				"function": func,
-				"params": params
+				"args": params
 			}
 		})
 	};

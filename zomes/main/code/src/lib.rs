@@ -164,7 +164,7 @@ pub mod main {
     }
 
     #[zome_fn("hc_public")]
-    fn accept_proposal(proposal_addr: Address, created_at: u32) -> ZomeApiResult<()> {
+    fn accept_proposal(proposal_addr: Address, created_at: u32) -> ZomeApiResult<Address> {
         matchmaking::handle_accept_proposal(proposal_addr, created_at)
     }
 

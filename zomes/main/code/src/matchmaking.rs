@@ -91,7 +91,7 @@ pub fn handle_get_proposals() -> ZomeApiResult<Vec<GetResponse<GameProposal>>> {
     )
 }
 
-pub fn handle_accept_proposal(proposal_addr: Address, created_at: u32) -> ZomeApiResult<()> {
+pub fn handle_accept_proposal(proposal_addr: Address, created_at: u32) -> ZomeApiResult<Address> {
     // this will early return error if it doesn't exist
     let proposal: GameProposal = hdk::utils::get_as_type(proposal_addr.clone())?;
 
@@ -114,7 +114,7 @@ pub fn handle_accept_proposal(proposal_addr: Address, created_at: u32) -> ZomeAp
         "from_proposal",
         ""
     )?;
-    Ok(())
+    Ok(game_addr)
 }
 
 pub fn handle_check_responses(proposal_addr: Address) -> ZomeApiResult<Vec<GetResponse<Game>>> {
@@ -155,7 +155,7 @@ pub fn game_proposal_def() -> ValidatingEntryType {
                     }
                     
                 },
-                EntryValidationData::Delete{..} => {
+                EntryValidationData::Delete{..} => { // should update to only the author can delete
                     Ok(())
                 },
                 _ => {

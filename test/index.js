@@ -91,16 +91,19 @@ scenario.runTape("Bob can accept Alices proposal, create a game and Alice can se
   const proposals = await bob.callSync("main", "get_proposals", {})
   t.equal(proposals.Ok.length, 1, "Bob could retrieve Alices Proposal")
 
-  const acceptance = await bob.callSync("main", "accept_proposal", { proposal: proposals.Ok[0], created_at: 0 })
+  const acceptance = await bob.callSync("main", "accept_proposal", { proposal_addr: proposals.Ok[0].address, created_at: 0 })
   t.notEqual(acceptance.Ok, undefined, "Bob could accept the proposal by creating a game") // check it returned Ok
 
-  const games = await bob.callSync("main", "check_responses", { proposal_addr: addr.Ok })
+  const games = await bob.callSync("main", "check_responses", { proposal_addr: proposals.Ok[0].address })
   t.deepEqual(
     games.Ok, 
-    [{
-      player_1: bob.agentId,
-      player_2: alice.agentId,
-      created_at: 0,
+    [{ 
+      entry: { 
+        player_1: bob.agentId,
+        player_2: alice.agentId,
+        created_at: 0
+      }, 
+      address: games.Ok[0].address
     }],
     "The game was created as expected"
   )

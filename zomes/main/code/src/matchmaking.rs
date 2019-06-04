@@ -8,10 +8,12 @@ use hdk::holochain_core_types::{
     entry::Entry,
     dna::entry_types::Sharing,
     error::HolochainError,
-    json::{JsonString},
+    json::{JsonString, default_to_json},
     validation::EntryValidationData,
     cas::content::AddressableContent,
 };
+use serde::Serialize;
+use std::fmt::Debug;
 
 use crate::game::Game;
 
@@ -20,6 +22,18 @@ pub struct GameProposal {
     pub agent: Address,
     pub message: String,
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GetResponse<T> {
+    pub entry: T,
+    pub address: Address
+}
+
+impl<T: Into<JsonString> + Debug + Serialize> From<GetResponse<T>> for JsonString {
+    fn from(u: GetResponse<T>) -> JsonString {
+        default_to_json(u)
+    }
+} 
 
 pub fn handle_create_proposal(message: String) -> ZomeApiResult<Address> {
 
@@ -58,28 +72,28 @@ pub fn handle_create_proposal(message: String) -> ZomeApiResult<Address> {
     Ok(proposal_address)
 }
 
-pub fn handle_get_proposals() -> ZomeApiResult<Vec<GameProposal>> {
+pub fn handle_get_proposals() -> ZomeApiResult<Vec<GetResponse<GameProposal>>> {
     // define the anchor entry again and compute its hash
     let anchor_address = Entry::App(
         "anchor".into(),
         "game_proposals".into()
     ).address();
     
-    hdk::utils::get_links_and_load_type(
-        &anchor_address, 
-        Some("has_proposal".into()), // the link type to match
-        None
+    Ok(
+        hdk::utils::get_links_and_load_type(
+            &anchor_address, 
+            Some("has_proposal".into()), // the link type to match
+            None
+        )?.into_iter().map(|proposal: GameProposal| {
+            let address = Entry::App("game_proposal".into(), proposal.clone().into()).address();
+            GetResponse{entry: proposal, address}
+        }).collect()
     )
 }
 
-pub fn handle_accept_proposal(proposal: GameProposal, created_at: u32) -> ZomeApiResult<()> {
-    // check the proposal exists
-    let proposal_addr = Entry::App(
-        "game_proposal".into(),
-        proposal.clone().into()
-    ).address();
+pub fn handle_accept_proposal(proposal_addr: Address, created_at: u32) -> ZomeApiResult<()> {
     // this will early return error if it doesn't exist
-    hdk::get_entry(&proposal_addr)?;
+    let proposal: GameProposal = hdk::utils::get_as_type(proposal_addr.clone())?;
 
     // create the new game
     let game = Game {
@@ -103,8 +117,14 @@ pub fn handle_accept_proposal(proposal: GameProposal, created_at: u32) -> ZomeAp
     Ok(())
 }
 
-pub fn handle_check_responses(proposal_addr: Address) -> ZomeApiResult<Vec<Game>> {
-    hdk::utils::get_links_and_load_type(&proposal_addr, Some("from_proposal".into()), None)
+pub fn handle_check_responses(proposal_addr: Address) -> ZomeApiResult<Vec<GetResponse<Game>>> {
+    Ok(
+        hdk::utils::get_links_and_load_type(&proposal_addr, Some("from_proposal".into()), None)?
+        .into_iter().map(|game: Game| {
+            let address = Entry::App("game".into(), game.clone().into()).address();
+            GetResponse{entry: game, address}
+        }).collect()
+    )
 }
 
 pub fn handle_remove_proposal(proposal_addr: Address) -> ZomeApiResult<Address> {

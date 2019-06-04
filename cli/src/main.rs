@@ -21,6 +21,13 @@ static COMMANDS: &[(&str, &str)] = &[
     ("new_game",         "Create a new game to play with an opponent, usage: new_game <opponent_address>"),
     ("moves",            "Display the set of moves this game supports"),
     ("make_move",        "Make a move in this game, usage: make_move <move_json>"),
+ 
+    ("create_proposal",  "Publicly publish a proposal that you are looking for someone to play a game with. Usage: post_propoal <message>"),
+    ("accept_proposal",   "Accept a propsal given its hash. This will start a new game. Usage: accept_proposal <proposal_hash>"),
+    ("get_proposals",    "Get all of the public proposals that are current"),
+    ("check_responses",  "Given a proposal hash find the responses. Usage: check_responses <proposal_hash>"),
+    ("remove_proposal",  "Remove a proposal that you authored given its hash. Usage: remove_proposal <proposal_hash>"),    
+ 
     ("exit",             "Exit this CLI. Holochain will persist state so games can be resumed later."),
 ];
 
@@ -33,6 +40,14 @@ fn main() -> io::Result<()> {
     let make_move = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "make_move".into());
     let create_game = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "create_game".into());
     let render_game = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "render_state".into());
+
+    // matchmaking funcs
+    let create_proposal = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "create_proposal".into());
+    let get_proposals = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "get_proposals".into());
+    let _accept_proposal = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "accept_proposal".into());
+    let check_responses = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "check_responses".into());
+    let _remove_proposal = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "remove_proposal".into());
+   
 
     let interface = Interface::new("Holochain generic game")?;
 
@@ -136,6 +151,34 @@ fn main() -> io::Result<()> {
             	else {
             		Err("No game set to make moves on. use the \"join_game\" command.".into())
             	}
+            },
+            "create_proposal" => {
+                println!("creating proposal with message {:?}", args);
+                let result = create_proposal(json!({"message": args}));
+                println!("Create result: {:?}", result);
+                Ok(())
+            },
+            "get_proposals" => {
+                let result = get_proposals(json!({})).unwrap();
+                result.as_array().unwrap().iter().enumerate().for_each(|(i, proposal)| {
+                    println!("{}: --- Agent: {}, message: {}", i, proposal["agent"], proposal["message"]);
+
+                });
+                Ok(())
+            },
+            "accept_proposal" => {
+                Ok(())
+            },
+            "check_responses" => {
+                let result = check_responses(json!({})).unwrap();
+                result.as_array().unwrap().iter().enumerate().for_each(|(i, response)| {
+                    println!("{}: --- GameHash: {}", i, response["agent"]);
+
+                });
+                Ok(())            
+            },
+            "remove_proposal" => {
+                Ok(())
             },
             "exit" => {
             	if let Some(current_game) = current_game.clone() {

@@ -43,6 +43,7 @@ mod matchmaking;
 
 use game::Game;
 use game_move::{Move, MoveInput};
+use matchmaking::{GameProposal, GetResponse};
 
 #[zome]
 pub mod main {
@@ -158,17 +159,17 @@ pub mod main {
     }
 
     #[zome_fn("hc_public")]
-    fn get_proposals() -> ZomeApiResult<Vec<matchmaking::GameProposal>> {
+    fn get_proposals() -> ZomeApiResult<Vec<GetResponse<GameProposal>>> {
         matchmaking::handle_get_proposals()
     }
 
     #[zome_fn("hc_public")]
-    fn accept_proposal(proposal: matchmaking::GameProposal, created_at: u32) -> ZomeApiResult<()> {
-        matchmaking::handle_accept_proposal(proposal, created_at)
+    fn accept_proposal(proposal_addr: Address, created_at: u32) -> ZomeApiResult<()> {
+        matchmaking::handle_accept_proposal(proposal_addr, created_at)
     }
 
     #[zome_fn("hc_public")]
-    fn check_responses(proposal_addr: Address) -> ZomeApiResult<Vec<Game>> {
+    fn check_responses(proposal_addr: Address) -> ZomeApiResult<Vec<GetResponse<Game>>> {
         matchmaking::handle_check_responses(proposal_addr)
     }
 

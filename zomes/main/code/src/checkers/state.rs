@@ -127,6 +127,7 @@ pub fn state_reducer(game: Game, current_state: GameState, next_move: &Move) -> 
             board[to.x][to.y] = match current_player { Player::Player1 => 1, Player::Player2 => 2};
 
             // TODO: check if any opponent pieces were taken in this move
+            
 
             // TODO: Check if either player has won
 

@@ -1,16 +1,27 @@
-// This test file uses the tape testing framework.
-// To learn more, go here: https://github.com/substack/tape
-const { Config, Scenario } = require("@holochain/holochain-nodejs")
-Scenario.setTape(require("tape"))
+const path = require('path')
+const tape = require('tape')
 
-const dnaPath = "./dist/generic-game.dna.json"
-const agentAlice = Config.agent("alice")
-const agentBob = Config.agent("bob")
+const { Diorama, tapeExecutor, backwardCompatibilityMiddleware } = require('@holochain/diorama')
 
-const dna = Config.dna(dnaPath)
-const instanceAlice = Config.instance(agentAlice, dna)
-const instanceBob = Config.instance(agentBob, dna)
-const scenario = new Scenario([instanceAlice, instanceBob], {debugLog: false})
+process.on('unhandledRejection', error => {
+  // Will print "unhandledRejection err is not defined"
+  console.error('got unhandledRejection:', error);
+});
+
+const dnaPath = path.join(__dirname, "../dist/generic-game.dna.json")
+const dna = Diorama.dna(dnaPath, 'generic-game')
+
+const diorama = new Diorama({
+  instances: {
+    alice: dna,
+    bob: dna,
+  },
+  bridges: [],
+  debugLog: false,
+  executor: tapeExecutor(require('tape')),
+  middleware: backwardCompatibilityMiddleware,
+})
+
 
 
 
@@ -18,27 +29,27 @@ const scenario = new Scenario([instanceAlice, instanceBob], {debugLog: false})
 let results = []
 const lastResult = (back=0) => results[results.length-1-back]
 const makeMove = async (agent, game_move) => {
-  const result = await agent.callSync("main", "make_move", { new_move: game_move })
+  const result = await agent.call("main", "make_move", { new_move: game_move })
   results.push(result)
   return result
 }
 const createGame = async (agent, opponent) => {
-  const result = await agent.callSync("main", "create_game", { opponent: opponent.agentId, timestamp: 0 })
+  const result = await agent.call("main", "create_game", { opponent: opponent.agentId, timestamp: 0 })
   results.push(result)
   return result.Ok
 }
 const renderState = async (agent, game_address) => {
-  const result = await agent.callSync("main", "render_state", { game_address })
+  const result = await agent.call("main", "render_state", { game_address })
   console.log(result.Ok)
 }
 const getState = async (agent, game_address) => {
-  const result = await agent.callSync("main", "get_state", { game_address })
+  const result = await agent.call("main", "get_state", { game_address })
   results.push(result)
   return result
 }
 
 
-scenario.runTape("Can create a new game of checkers and make a move", async (t, { alice, bob }) => {
+diorama.registerScenario("Can create a new game of checkers and make a move", async (s, t, { alice, bob }) => {
 
   let game_address = await createGame(alice, bob);
 
@@ -84,17 +95,17 @@ scenario.runTape("Can create a new game of checkers and make a move", async (t, 
 })
 
 // test the matchmaking
-scenario.runTape("Bob can accept Alices proposal, create a game and Alice can see the game", async (t, { alice, bob }) => {
-  const addr = await alice.callSync("main", "create_proposal", {message : "sup"})
+diorama.registerScenario("Bob can accept Alices proposal, create a game and Alice can see the game", async (s, t, { alice, bob }) => {
+  const addr = await alice.call("main", "create_proposal", {message : "sup"})
   t.equal(addr.Ok.length, 46, "Proposal was created successfully")
 
-  const proposals = await bob.callSync("main", "get_proposals", {})
+  const proposals = await bob.call("main", "get_proposals", {})
   t.equal(proposals.Ok.length, 1, "Bob could retrieve Alices Proposal")
 
-  const acceptance = await bob.callSync("main", "accept_proposal", { proposal_addr: proposals.Ok[0].address, created_at: 0 })
+  const acceptance = await bob.call("main", "accept_proposal", { proposal_addr: proposals.Ok[0].address, created_at: 0 })
   t.notEqual(acceptance.Ok, undefined, "Bob could accept the proposal by creating a game") // check it returned Ok
 
-  const games = await bob.callSync("main", "check_responses", { proposal_addr: proposals.Ok[0].address })
+  const games = await bob.call("main", "check_responses", { proposal_addr: proposals.Ok[0].address })
   t.deepEqual(
     games.Ok, 
     [{ 
@@ -108,3 +119,6 @@ scenario.runTape("Bob can accept Alices proposal, create a game and Alice can se
     "The game was created as expected"
   )
 })
+
+
+diorama.run()

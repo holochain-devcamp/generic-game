@@ -29,83 +29,84 @@ const diorama = new Diorama({
 let results = []
 const lastResult = (back=0) => results[results.length-1-back]
 const makeMove = async (agent, game_move) => {
-  const result = await agent.call("main", "make_move", { new_move: game_move })
+  const result = await agent.callSync("main", "make_move", { new_move: game_move })
   results.push(result)
   return result
 }
 const createGame = async (agent, opponent) => {
-  const result = await agent.call("main", "create_game", { opponent: opponent.agentId, timestamp: 0 })
+  const result = await agent.callSync("main", "create_game", { opponent: opponent.agentId, timestamp: 0 })
   results.push(result)
   return result.Ok
 }
 const renderState = async (agent, game_address) => {
-  const result = await agent.call("main", "render_state", { game_address })
+  const result = await agent.callSync("main", "render_state", { game_address })
   console.log(result.Ok)
 }
 const getState = async (agent, game_address) => {
-  const result = await agent.call("main", "get_state", { game_address })
+  const result = await agent.callSync("main", "get_state", { game_address })
   results.push(result)
   return result
 }
 
 
-diorama.registerScenario("Can create a new game of checkers and make a move", async (s, t, { alice, bob }) => {
+// diorama.registerScenario("Can create a new game of checkers and make a move", async (s, t, { alice, bob }) => {
 
-  let game_address = await createGame(alice, bob);
+//   let game_address = await createGame(alice, bob);
 
-  // agent 2 must go first
-  await makeMove(bob, {
-    game: game_address,
-    timestamp: 0,
-    move_type: {MovePiece: { from: {x: 1, y: 5}, to: {x: 0, y: 4} }},
-  })
-  t.notEqual(lastResult().Ok, undefined, "Bob made the first move")
+//   // agent 2 must go first
+//   await makeMove(bob, {
+//     game: game_address,
+//     timestamp: 0,
+//     move_type: {MovePiece: { from: {x: 1, y: 5}, to: {x: 0, y: 4} }},
+//   })
+//   t.notEqual(lastResult().Ok, undefined, "Bob made the first move")
 
-  await renderState(alice, game_address)
+//   await renderState(alice, game_address)
 
-  await makeMove(alice, {
-  	game: game_address,
-  	timestamp: 1,
-  	move_type: {MovePiece: { from: {x: 0, y: 2}, to: {x: 1, y: 3} }},
-  })
-  t.notEqual(lastResult().Ok, undefined, "Alice made the second move")
+//   await makeMove(alice, {
+//   	game: game_address,
+//   	timestamp: 1,
+//   	move_type: {MovePiece: { from: {x: 0, y: 2}, to: {x: 1, y: 3} }},
+//   })
+//   t.notEqual(lastResult().Ok, undefined, "Alice made the second move")
 
-  await renderState(alice, game_address)
+//   await renderState(alice, game_address)
 
-  await makeMove(bob, {
-    game: game_address,
-    timestamp: 2,
-    move_type: {MovePiece: { from: {x: 5, y: 5}, to: {x: 6, y: 4} }},
-  })
-  t.notEqual(lastResult().Ok, undefined, "Bob made the third move")
+//   await makeMove(bob, {
+//     game: game_address,
+//     timestamp: 2,
+//     move_type: {MovePiece: { from: {x: 5, y: 5}, to: {x: 6, y: 4} }},
+//   })
+//   t.notEqual(lastResult().Ok, undefined, "Bob made the third move")
 
-  let state = await getState(alice, game_address)
+//   let state = await getState(alice, game_address)
 
-  t.equal(state.Ok.moves.length, 3, "There were three moves in the game")
+//   t.equal(state.Ok.moves.length, 3, "There were three moves in the game")
 
-  // both agents should see the same game state
-  t.deepEqual(await getState(bob, game_address), await getState(alice, game_address), "Alice and Bob both see the same game state")
+//   // both agents should see the same game state
+//   t.deepEqual(await getState(bob, game_address), await getState(alice, game_address), "Alice and Bob both see the same game state")
 
 
-  // finally print all the outputs
-  results.forEach((result, i) => {
-    console.log(`${i}: ${JSON.stringify(result, null, 2)}\n`)
-  })
+//   // finally print all the outputs
+//   results.forEach((result, i) => {
+//     console.log(`${i}: ${JSON.stringify(result, null, 2)}\n`)
+//   })
 
-})
+// })
 
 // test the matchmaking
 diorama.registerScenario("Bob can accept Alices proposal, create a game and Alice can see the game", async (s, t, { alice, bob }) => {
-  const addr = await alice.call("main", "create_proposal", {message : "sup"})
+  const addr = await alice.callSync("main", "create_proposal", {message : "sup"})
   t.equal(addr.Ok.length, 46, "Proposal was created successfully")
 
-  const proposals = await bob.call("main", "get_proposals", {})
+  const proposals = await bob.callSync("main", "get_proposals", {})
+  console.log(proposals)
   t.equal(proposals.Ok.length, 1, "Bob could retrieve Alices Proposal")
 
-  const acceptance = await bob.call("main", "accept_proposal", { proposal_addr: proposals.Ok[0].address, created_at: 0 })
+  const acceptance = await bob.callSync("main", "accept_proposal", { proposal_addr: proposals.Ok[0].address, created_at: 0 })
   t.notEqual(acceptance.Ok, undefined, "Bob could accept the proposal by creating a game") // check it returned Ok
 
-  const games = await bob.call("main", "check_responses", { proposal_addr: proposals.Ok[0].address })
+  const games = await bob.callSync("main", "check_responses", { proposal_addr: proposals.Ok[0].address })
   t.deepEqual(
     games.Ok, 
     [{ 

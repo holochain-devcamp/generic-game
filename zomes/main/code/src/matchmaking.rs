@@ -11,6 +11,7 @@ use hdk::holochain_core_types::{
     json::{JsonString, default_to_json},
     validation::EntryValidationData,
     cas::content::AddressableContent,
+    link::LinkMatch,
 };
 use serde::Serialize;
 use std::fmt::Debug;
@@ -82,8 +83,8 @@ pub fn handle_get_proposals() -> ZomeApiResult<Vec<GetResponse<GameProposal>>> {
     Ok(
         hdk::utils::get_links_and_load_type(
             &anchor_address, 
-            Some("has_proposal".into()), // the link type to match
-            None
+            LinkMatch::Exactly("has_proposal"), // the link type to match
+            LinkMatch::Any
         )?.into_iter().map(|proposal: GameProposal| {
             let address = Entry::App("game_proposal".into(), proposal.clone().into()).address();
             GetResponse{entry: proposal, address}
@@ -119,7 +120,7 @@ pub fn handle_accept_proposal(proposal_addr: Address, created_at: u32) -> ZomeAp
 
 pub fn handle_check_responses(proposal_addr: Address) -> ZomeApiResult<Vec<GetResponse<Game>>> {
     Ok(
-        hdk::utils::get_links_and_load_type(&proposal_addr, Some("from_proposal".into()), None)?
+        hdk::utils::get_links_and_load_type(&proposal_addr, LinkMatch::Exactly("from_proposal".into()), LinkMatch::Any)?
         .into_iter().map(|game: Game| {
             let address = Entry::App("game".into(), game.clone().into()).address();
             GetResponse{entry: game, address}

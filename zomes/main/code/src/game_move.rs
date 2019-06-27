@@ -1,13 +1,16 @@
 use hdk::{
     entry_definition::ValidatingEntryType,
-};
-use hdk::holochain_core_types::{
-    cas::content::Address,
-    dna::entry_types::Sharing,
-    error::HolochainError,
-    json::JsonString,
-    validation::EntryValidationData,
-    entry::Entry,
+    holochain_persistence_api::{
+        cas::content::{Address},
+    },
+    holochain_json_api::{
+        error::JsonError, json::JsonString,
+    },
+    holochain_core_types::{
+        dna::entry_types::Sharing,
+        validation::EntryValidationData,
+        entry::Entry,
+    }
 };
 
 use crate::MoveType;

@@ -6,35 +6,37 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 
 extern crate hdk_proc_macros;
 use hdk_proc_macros::zome;
 
 use hdk::{
-    error::ZomeApiResult,
     AGENT_ADDRESS,
     entry_definition::ValidatingEntryType,
-};
-use hdk::holochain_core_types::{
-    cas::content::Address,
-    entry::Entry,
+    error::ZomeApiResult,
+    holochain_persistence_api::{
+        cas::content::{Address},
+    },
+    holochain_core_types::{
+        entry::Entry,
+    },
 };
 
 // This is where you would import your own game State, MoveType and state_reducer
-mod checkers;
-pub use checkers::{
-    GameState,
-    MoveType,
-    state_reducer,
-};
-
-// mod tictactoe;
-// pub use tictactoe::{
+// mod checkers;
+// pub use checkers::{
 //     GameState,
 //     MoveType,
 //     state_reducer,
 // };
+
+mod tictactoe;
+pub use tictactoe::{
+    GameState,
+    MoveType,
+    state_reducer,
+};
 
 
 mod game;

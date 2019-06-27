@@ -1,7 +1,5 @@
-use hdk::{
-    holochain_json_api::{
-        error::JsonError, json::JsonString,
-    },
+use hdk::holochain_json_api::{
+    error::JsonError, json::JsonString,
 };
 use hdk::AGENT_ADDRESS;
 

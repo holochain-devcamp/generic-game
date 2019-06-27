@@ -1,4 +1,4 @@
-use hdk::holochain_core_types::{
+use hdk::holochain_persistence_api::{
     cas::content::Address,
 };
 

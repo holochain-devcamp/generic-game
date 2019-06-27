@@ -9,7 +9,7 @@ module.exports = (scenario) => {
 	  await makeMove(bob, {
 	    game: game_address,
 	    timestamp: 0,
-	    move_type: {Place: { x: 0, y: 0 }},
+	    move_type: {Place: { pos: { x: 0, y: 0 } } },
 	  })
 	  t.notEqual(lastResult().Ok, undefined, "Bob made the first move")
 
@@ -18,7 +18,7 @@ module.exports = (scenario) => {
 	  await makeMove(alice, {
 	  	game: game_address,
 	  	timestamp: 1,
-	    move_type: {Place: { x: 1, y: 1 }},
+	    move_type: {Place: { pos: { x: 1, y: 1 } } },
 	  })
 	  t.notEqual(lastResult().Ok, undefined, "Alice made the second move")
 
@@ -27,7 +27,7 @@ module.exports = (scenario) => {
 	  await makeMove(bob, {
 	    game: game_address,
 	    timestamp: 2,
-	    move_type: {Place: { x: 2, y: 2 }},
+	    move_type: {Place: { pos: { x: 1, y: 0 } } },
 	  })
 	  t.notEqual(lastResult().Ok, undefined, "Bob made the third move")
 

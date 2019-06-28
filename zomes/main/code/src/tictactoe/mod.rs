@@ -10,7 +10,6 @@ pub mod moves;
 pub use self::{
     state::{
         GameState,
-        state_reducer,
     },
     moves::{
         MoveType,

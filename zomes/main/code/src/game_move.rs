@@ -51,18 +51,18 @@ pub fn definition() -> ValidatingEntryType {
                 	hdk::debug(format!("{:?}", local_chain))?;
 
                 	// load the game and game state
-                	let new_move = Move::from(entry);
+                	let _new_move = Move::from(entry);
 
                     // Sometimes the validating entry is already in the chain when validation runs,
                     // To make our state reduction work correctly this must be removed
-                    local_chain.remove_item(&Entry::App("move".into() , new_move.clone().into()));
+                    local_chain.remove_item(&Entry::App("move".into() , _new_move.clone().into()));
 
-                	let state = get_state_local_chain(local_chain.clone(), &new_move.game)
+                	let state = get_state_local_chain(local_chain.clone(), &_new_move.game)
                 		.map_err(|_| "Could not load state during validation")?;
-                	let game = get_game_local_chain(local_chain, &new_move.game)
+                	let game = get_game_local_chain(local_chain, &_new_move.game)
                 	    .map_err(|_| "Could not load game during validation")?;
                     
-                    new_move.is_valid(game, state)
+                    _new_move.is_valid(game, state)
                 },
                 _ => {
                     Err("Cannot modify or delete a move".into())

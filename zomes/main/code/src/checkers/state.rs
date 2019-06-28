@@ -109,49 +109,47 @@ impl GameState {
         }
         disp
     }
-}
 
-/// takes a current game state and a move and progresses the state
-/// assumes that moves are totally valid by this stage
-pub fn state_reducer(game: Game, current_state: GameState, next_move: &Move) -> GameState {
-    let current_player = get_current_player(&game, &next_move.author).unwrap();
-    let mut moves = current_state.moves.clone();
-    moves.push(next_move.to_owned());
-    
-    match &next_move.move_type {
-        MoveType::MovePiece{to, from} => {
-            let mut board = board_sparse_to_dense(&current_state);
-            // make the move by deleting the piece at the from position and adding one at the to position
-            board[from.x][from.y] = 0;
-            board[to.x][to.y] = match current_player { Player::Player1 => 1, Player::Player2 => 2};
+    pub fn evolve(&self, game: Game, next_move: &Move) -> Self {
+        let current_player = get_current_player(&game, &next_move.author).unwrap();
+        let mut moves = self.clone().moves.clone();
+        moves.push(next_move.to_owned());
+        
+        match &next_move.move_type {
+            MoveType::MovePiece{to, from} => {
+                let mut board = board_sparse_to_dense(&self.clone());
+                // make the move by deleting the piece at the from position and adding one at the to position
+                board[from.x][from.y] = 0;
+                board[to.x][to.y] = match current_player { Player::Player1 => 1, Player::Player2 => 2};
 
-            // TODO: check if any opponent pieces were taken in this move
-            
+                // TODO: check if any opponent pieces were taken in this move
+                
 
-            // TODO: Check if either player has won
+                // TODO: Check if either player has won
 
-            let (player_1_pieces, player_2_pieces) = board_dense_to_sparse(board);
+                let (player_1_pieces, player_2_pieces) = board_dense_to_sparse(board);
 
-            GameState{
-                player_1: PlayerState {
-                    pieces: player_1_pieces,
-                    ..current_state.player_1
-                },
-                player_2: PlayerState {
-                    pieces: player_2_pieces,
-                    ..current_state.player_2
-                },
-                moves,
-                ..current_state
-            }
-        },
-        MoveType::Resign => {
-            match current_player {
-                Player::Player1 => {
-                    GameState{ player_1: PlayerState{resigned: true, ..current_state.player_1}, moves, ..current_state}
-                },
-                Player::Player2 => {
-                    GameState{ player_2: PlayerState{resigned: true, ..current_state.player_2}, moves, ..current_state}
+                GameState{
+                    player_1: PlayerState {
+                        pieces: player_1_pieces,
+                        ..self.clone().player_1
+                    },
+                    player_2: PlayerState {
+                        pieces: player_2_pieces,
+                        ..self.clone().player_2
+                    },
+                    moves,
+                    ..self.clone()
+                }
+            },
+            MoveType::Resign => {
+                match current_player {
+                    Player::Player1 => {
+                        GameState{ player_1: PlayerState{resigned: true, ..self.clone().player_1}, moves, ..self.clone()}
+                    },
+                    Player::Player2 => {
+                        GameState{ player_2: PlayerState{resigned: true, ..self.clone().player_2}, moves, ..self.clone()}
+                    }
                 }
             }
         }

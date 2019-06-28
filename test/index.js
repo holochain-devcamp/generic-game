@@ -23,8 +23,8 @@ const diorama = new Diorama({
 })
 
 // uncomment one of these
-require('./tictactoe')(diorama.registerScenario)
-// require('./checkers')(diorama.registerScenario)
+// require('./tictactoe')(diorama.registerScenario)
+require('./checkers')(diorama.registerScenario)
 
 // test the matchmaking 
 require('./matchmaking')(diorama.registerScenario)

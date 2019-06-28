@@ -100,69 +100,67 @@ impl GameState {
         disp
     }
 
-}
+    pub fn evolve(&self, game: Game, next_move: &Move) -> Self {
+        let current_player = get_current_player(&game, &next_move.author).unwrap();
 
-/// takes a current game state and a move and progresses the state
-/// assumes that moves are totally valid by this stage
-pub fn state_reducer(game: Game, current_state: GameState, next_move: &Move) -> GameState {
-    let current_player = get_current_player(&game, &next_move.author).unwrap();
+        match &next_move.move_type {
+            MoveType::Place{pos} => {
+                let mut board = board_sparse_to_dense(&self);
+                let mut moves = self.moves.clone();
+                moves.push(next_move.to_owned());
 
-    match &next_move.move_type {
-        MoveType::Place{pos} => {
-            let mut board = board_sparse_to_dense(&current_state);
-            let mut moves = current_state.moves;
-            moves.push(next_move.to_owned());
+                // make the move by adding a new piece at the position
+                board[pos.x][pos.y] = match current_player { Player::Player1 => 1, Player::Player2 => 2};
 
-            // make the move by adding a new piece at the position
-            board[pos.x][pos.y] = match current_player { Player::Player1 => 1, Player::Player2 => 2};
-
-            // check if this resulted in a player victory
-            let mut diag_down = 0;
-            let mut diag_up = 0;
-            let mut across = [0; 3];
-            let mut down = [0; 3];
-            for x in 0..BOARD_SIZE {
-                for y in 0..BOARD_SIZE {
-                    let delta = match board[x][y] {1 => 1, 2 => -1, _ => 0};
-                    down[x] += delta;
-                    across[y] += delta;
-                    // diag down e.g. \
-                    if x == y {
-                        diag_down += delta;
-                    } //diag up  e.g. /
-                    else if x == (BOARD_SIZE - 1 - y) {
-                        diag_up += delta;
+                // check if this resulted in a player victory
+                let mut diag_down = 0;
+                let mut diag_up = 0;
+                let mut across = [0; 3];
+                let mut down = [0; 3];
+                for x in 0..BOARD_SIZE {
+                    for y in 0..BOARD_SIZE {
+                        let delta = match board[x][y] {1 => 1, 2 => -1, _ => 0};
+                        down[x] += delta;
+                        across[y] += delta;
+                        // diag down e.g. \
+                        if x == y {
+                            diag_down += delta;
+                        } //diag up  e.g. /
+                        else if x == (BOARD_SIZE - 1 - y) {
+                            diag_up += delta;
+                        }
                     }
                 }
+                let player_1_victory = across.iter().any(|e| *e == (BOARD_SIZE as i32)) 
+                                    || down.iter().any(|e| *e == (BOARD_SIZE as i32));
+                                    || diag_down == (BOARD_SIZE as i32);
+                                    || diag_up == (BOARD_SIZE as i32);
+
+                let player_2_victory = across.iter().any(|e| *e == (-1*BOARD_SIZE as i32)) 
+                                    || down.iter().any(|e| *e == (-1*BOARD_SIZE as i32));
+                                    || diag_down == (-1*BOARD_SIZE as i32);
+                                    || diag_up == (-1*BOARD_SIZE as i32);
+
+                let (player_1_pieces, player_2_pieces) = board_dense_to_sparse(board);
+
+                GameState{
+                    player_1: PlayerState {
+                        pieces: player_1_pieces,
+                        resigned: false,
+                        winner: player_1_victory,
+                    },
+                    player_2: PlayerState {
+                        pieces: player_2_pieces,
+                        resigned: false,
+                        winner: player_2_victory,
+                    },
+                    moves,
+                    ..self.clone()
+                }        
             }
-            let player_1_victory = across.iter().any(|e| *e == (BOARD_SIZE as i32)) 
-                                || down.iter().any(|e| *e == (BOARD_SIZE as i32));
-                                || diag_down == (BOARD_SIZE as i32);
-                                || diag_up == (BOARD_SIZE as i32);
-
-            let player_2_victory = across.iter().any(|e| *e == (-1*BOARD_SIZE as i32)) 
-                                || down.iter().any(|e| *e == (-1*BOARD_SIZE as i32));
-                                || diag_down == (-1*BOARD_SIZE as i32);
-                                || diag_up == (-1*BOARD_SIZE as i32);
-
-            let (player_1_pieces, player_2_pieces) = board_dense_to_sparse(board);
-
-            GameState{
-                player_1: PlayerState {
-                    pieces: player_1_pieces,
-                    resigned: false,
-                    winner: player_1_victory,
-                },
-                player_2: PlayerState {
-                    pieces: player_2_pieces,
-                    resigned: false,
-                    winner: player_2_victory,
-                },
-                moves,
-                ..current_state
-            }        
         }
     }
+
 }
 
 /*========================================

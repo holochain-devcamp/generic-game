@@ -27,7 +27,7 @@ const diorama = new Diorama({
 require('./checkers')(diorama.registerScenario)
 
 // test the matchmaking 
-require('./matchmaking')(diorama.registerScenario)
+// require('./matchmaking')(diorama.registerScenario)
 
 
 diorama.run()

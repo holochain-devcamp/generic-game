@@ -128,7 +128,18 @@ pub mod main {
             new_move.into(),
         );
         let move_address = hdk::commit_entry(&move_entry)?;
-        hdk::link_entries(&base_address, &move_address, "", "")?;
+
+        match moves.last() {
+            Some(_) => {
+                // base is a move
+                hdk::link_entries(&base_address, &move_address, "move->move", "")?;
+            }
+            None => {
+                // base is a game
+                hdk::link_entries(&base_address, &move_address, "game->move", "")?;
+            }
+        }
+
         Ok(())
     }
 
@@ -151,7 +162,6 @@ pub mod main {
     fn whoami() -> ZomeApiResult<Address> {
         Ok(AGENT_ADDRESS.to_string().into())
     }
-
 
     #[zome_fn("hc_public")]
     fn create_proposal(message: String) -> ZomeApiResult<Address> {

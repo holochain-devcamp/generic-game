@@ -73,7 +73,7 @@ pub fn definition() -> ValidatingEntryType {
         links: [
         	from!(
                 "game",
-                link_type: "",
+                link_type: "game->move",
                 validation_package: || {
                     hdk::ValidationPackageDefinition::Entry
                 },
@@ -83,7 +83,7 @@ pub fn definition() -> ValidatingEntryType {
             ),
         	from!(
                 "move",
-                link_type: "",
+                link_type: "move->move",
                 validation_package: || {
                     hdk::ValidationPackageDefinition::Entry
                 },

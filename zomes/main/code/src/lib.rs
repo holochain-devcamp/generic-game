@@ -109,15 +109,24 @@ pub mod main {
     #[zome_fn("hc_public")]
     fn make_move(new_move: MoveInput) -> ZomeApiResult<()> {
         // get all the moves from the DHT by following the hash chain
-        let moves = game::get_moves(&new_move.game)?;
+        let published_moves = game::get_moves(&new_move.game)?;
 
-        // commit the latest move to local chain to allow validation of the next move (if one exists)
-        let base_address = match moves.last() {
-            Some(last_move) => {
-                let new_move_entry = Entry::App("move".into(), last_move.into());
-                hdk::commit_entry(&new_move_entry)?
+        // get all moves in this agents local chain
+        let chain_moves = hdk::query("move".into(), 0, 0)?;
+
+        // Update this agents local chain to match the game state
+        let base_address = match published_moves.clone().last() {
+            Some(last_move) => { // add any moves NOT found in the DHT to this agents local chain
+                for _move in &published_moves {
+                    let move_entry = Entry::App("move".into(), _move.into());
+                    if !chain_moves.contains(&move_entry.address()) {
+                        hdk::commit_entry(&move_entry)?;
+                    }
+                }
+                Entry::App("move".into(), last_move.into()).address()
+
             }
-            None => { // no moves have been made so commit the Game
+            None => { // no moves have been made so commit the Game to local chain
                 let game = game::get_game(&new_move.game)?;
                 let game_entry = Entry::App("game".into(), game.into());
                 hdk::commit_entry(&game_entry)?
@@ -137,7 +146,7 @@ pub mod main {
         );
         let move_address = hdk::commit_entry(&move_entry)?;
 
-        match moves.last() {
+        match published_moves.last() {
             Some(_) => {
                 // base is a move
                 hdk::link_entries(&base_address, &move_address, "move->move", "")?;

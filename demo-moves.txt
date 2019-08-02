@@ -1,7 +1,7 @@
 ####### setup ########
 
 # start conductor (in own terminal)
-$> nix-shell http://holochain.love
+$> nix-shell https://github.com/holochain/holonix/tarball/0.0.22
 nix-shell> holochain -c ./conductor-config.toml
 
 # connect CLI as agent A (in own terminal, requires Rust install)

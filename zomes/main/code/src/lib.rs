@@ -1,4 +1,4 @@
-#![feature(try_from, vec_remove_item, proc_macro_hygiene)]
+#![feature(vec_remove_item, proc_macro_hygiene)]
 #[macro_use]
 extern crate hdk;
 extern crate serde;
@@ -16,7 +16,10 @@ use hdk::{
     entry_definition::ValidatingEntryType,
     error::ZomeApiResult,
     holochain_persistence_api::{
-        cas::content::{Address},
+        cas::content::{
+            Address,
+            AddressableContent,
+        },
     },
     holochain_core_types::{
         entry::Entry,
@@ -48,8 +51,13 @@ use matchmaking::{GameProposal, GetResponse};
 #[zome]
 pub mod main {
 
-    #[genesis]
-    pub fn genesis() {
+    #[init]
+    pub fn init() {
+        Ok(())
+    }
+
+    #[validate_agent]
+    pub fn validate_agent(validation_data: EntryValidationData<AgentId>) {
         Ok(())
     }
 
@@ -141,6 +149,19 @@ pub mod main {
         }
 
         Ok(())
+    }
+
+    #[zome_fn("hc_public")]
+    fn get_game_hash(opponent: Address, timestamp: u32) -> ZomeApiResult<Address> {
+        let new_game = Game {
+            player_1: opponent,
+            player_2: AGENT_ADDRESS.to_string().into(),
+            created_at: timestamp,
+        };
+        Ok(Entry::App(
+            "game".into(),
+            new_game.into(),
+        ).address())
     }
 
     #[zome_fn("hc_public")]

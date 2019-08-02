@@ -124,22 +124,45 @@ impl Piece {
         }
     }
 
-    fn can_move_to(&self, to: &Piece, player: &Player, _game_state: &GameState) -> Result<(), String> {
+    fn can_move_to(&self, to: &Piece, player: &Player, game_state: &GameState) -> Result<(), String> {
+
+        let jump = match ((self.x as i32 - to.x as i32).abs(), (self.y as i32 - to.y as i32).abs()) {
+            (1,1) => false,
+            (2,2) => {
+                let inbetween_piece = Piece{
+                    x: (self.x as i32 + (self.x as i32 - to.x as i32)/2) as usize,
+                    y: (self.y as i32 + (self.y as i32 - to.y as i32)/2) as usize,
+                };
+                match inbetween_piece.is_empty(game_state) {
+                    Ok(_) => {
+                        return Err("Can only jump over another piece".into())
+                    },
+                    Err(_) => {
+                        true
+                    }
+                }
+            },
+            _ => return Err("This move is not diagonal".to_string())
+        };
+
+        // are we jumping a piece? If so you can move
+        let step = match jump { false => 1, true => 2};
+
         // pawns can only move:
-        // sideways by 1 square
-        if !(to.x == self.x + 1 || to.x == self.x - 1) {
+        // sideways by 1 square (or 2 if jumping)
+        if !(to.x == self.x + step || to.x == self.x - step) {
             return Err("Pawns must move diagonally.".into())
         }
-        // and foward (according to the player)
+        // and foward by 1 according to the player (or 2 if jumping)
         match player {
             Player::Player1 => {
-                match to.y == self.y + 1 {
+                match to.y == self.y + step {
                     true => Ok(()),
                     false => Err("Pawns cannot move backward".into())
                 }
             },
             Player::Player2 => {
-                match to.y == self.y - 1 {
+                match to.y == self.y - step {
                     true => Ok(()),
                     false => Err("Pawns cannot move backward".into())
                 }

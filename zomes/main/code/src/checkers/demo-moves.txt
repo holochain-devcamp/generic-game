@@ -1,0 +1,41 @@
+####### setup ########
+
+# start conductor (in own terminal)
+holochain -c ./conductor-config.toml
+
+# connect CLI as agent A (in own terminal)
+A> cd cli
+A> cargo run instance1
+
+# collect CLI as agent B (in own terminal)
+B> cd cli
+B> cargo run instance2
+
+
+####### Playing a game ########
+
+# create a game and invite agent B (copy agent address of B)
+A> new_game HcScidPSdAT43q9qirJwt5rHJYjjsvougV3jgSBwdJujszw3bBu5Mktr74Rgnea
+
+# accept the game (copy hash from created game)
+B> join_game QmSdUBkztZqU5EPoLpoaRqzLMEkHr7HvbBRWsfKqwQ1eA8
+
+# list the moves and make a first move
+B> moves
+B> make_move {"MovePiece":{"from":{"x":1,"y":5},"to":{"x":2,"y":4}}}
+
+# show B can't move now because it is not their turn
+B> make_move {"MovePiece":{"from":{"x":3,"y":5},"to":{"x":4,"y":4}}}
+
+# Make move as A
+<enter to get updated board>
+A> make_move {"MovePiece":{"from":{"x":4,"y":2},"to":{"x":3,"y":3}}}
+
+# Make invalid move as B to show validation
+<enter to get updated board>
+B> make_move {"MovePiece":{"from":{"x":2,"y":4},"to":{"x":3,"y":3}}}
+
+# make correct move as B, hop to take piece
+B> make_move {"MovePiece":{"from":{"x":2,"y":4},"to":{"x":4,"y":2}}}
+
+## You can kind of freestyle it from here. Note there are no win conditions programmed in yet so although you can all the pieces the game never ends

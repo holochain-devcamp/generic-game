@@ -232,7 +232,7 @@ fn holochain_call_generator(
 	instance: String,
 	zome: String,
 	func: String,
-) -> Box<Fn(serde_json::Value) -> Result<serde_json::Value, String>> {
+) -> Box<dyn Fn(serde_json::Value) -> Result<serde_json::Value, String>> {
 
 	let client = reqwest::Client::new();
 

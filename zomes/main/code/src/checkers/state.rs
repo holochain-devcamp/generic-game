@@ -122,8 +122,13 @@ impl GameState {
                 board[from.x][from.y] = 0;
                 board[to.x][to.y] = match current_player { Player::Player1 => 1, Player::Player2 => 2};
 
-                // TODO: check if any opponent pieces were taken in this move
-                
+                // Delete any hopped pieces this move
+                if ((to.x as i32 - from.x as i32).abs(), (to.y as i32 - from.y as i32).abs()) == (2,2) {
+                    board
+                        [(from.x as i32 + (to.x as i32 - from.x as i32)/2) as usize] 
+                        [(from.y as i32 + (to.y as i32 - from.y as i32)/2) as usize]
+                     = 0;
+                }
 
                 // TODO: Check if either player has won
 

@@ -1,9 +1,10 @@
 ####### setup ########
 
 # start conductor (in own terminal)
-holochain -c ./conductor-config.toml
+$> nix-shell http://holochain.love
+nix-shell> holochain -c ./conductor-config.toml
 
-# connect CLI as agent A (in own terminal)
+# connect CLI as agent A (in own terminal, requires Rust install)
 A> cd cli
 A> cargo run instance1
 

@@ -126,19 +126,34 @@ impl Piece {
 
     fn can_move_to(&self, to: &Piece, player: &Player, game_state: &GameState) -> Result<(), String> {
 
-        let jump = match ((self.x as i32 - to.x as i32).abs(), (self.y as i32 - to.y as i32).abs()) {
+        let jump = match ((to.x as i32 - self.x as i32).abs(), (to.y as i32 - self.y as i32).abs()) {
             (1,1) => false,
             (2,2) => {
                 let inbetween_piece = Piece{
-                    x: (self.x as i32 + (self.x as i32 - to.x as i32)/2) as usize,
-                    y: (self.y as i32 + (self.y as i32 - to.y as i32)/2) as usize,
+                    x: (self.x as i32 + (to.x as i32 - self.x as i32)/2) as usize,
+                    y: (self.y as i32 + (to.y as i32 - self.y as i32)/2) as usize,
                 };
-                match inbetween_piece.is_empty(game_state) {
+                hdk::debug(format!("inbetween piece is: {:?}", inbetween_piece))?;
+                match inbetween_piece.is_empty(game_state) { // must be jumping over another piece
                     Ok(_) => {
                         return Err("Can only jump over another piece".into())
                     },
                     Err(_) => {
-                        true
+                        // that piece must belong to the other player
+                        match player {
+                            Player::Player1 => {
+                                match inbetween_piece.is_piece_beloning_to_player(&Player::Player2, game_state) {
+                                    Ok(_) => true,
+                                    Err(_) => return Err("Cannot jump own piece".into())
+                                }
+                            },
+                            Player::Player2 => {
+                                match inbetween_piece.is_piece_beloning_to_player(&Player::Player1, game_state) {
+                                    Ok(_) => true,
+                                    Err(_) => return Err("Cannot jump own piece".into())
+                                }
+                            },                        
+                        }
                     }
                 }
             },

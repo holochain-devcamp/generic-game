@@ -9,7 +9,7 @@ module.exports = (scenario) => {
 	  await makeMove(bob, {
 	    game: game_address,
 	    timestamp: 0,
-	    move_type: {MovePiece: { from: {x: 1, y: 5}, to: {x: 0, y: 4} }},
+	    move_type: {MovePiece: { from: {x: 2, y: 6}, to: {x: 4, y: 4} }},
 	  })
 	  t.notEqual(lastResult().Ok, undefined, "Bob made the first move")
 

@@ -35,7 +35,7 @@ impl Move {
          *     return their error messages upwards (akin to 'throw Exception' in other languages)
          *   - Usually you should make global move checks first ('is it the turn of the author of the move?'),
          *     and then match the 'self.move_type' enum and check the validity of each variant
-         * References: 
+         * References: https://doc.rust-lang.org/edition-guide/rust-2018/error-handling-and-panics/the-question-mark-operator-for-easier-error-handling.html
          */
     }
 }

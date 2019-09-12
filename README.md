@@ -1,7 +1,24 @@
 # Holochain Generic Game
-## tic-tac-toe and checkers examples
 
-## First Challenge - Play a game with yourself
+This is a generic game framework packaged in a Holochain application!
+
+**The main challenge for the September 2019 devcamp is to built your own game using this game framework.**
+
+## Overview
+
+Previous read: [Fundamentals of Games on Holochain](https://hackmd.io/@FqBkpkUfTSKcADA4DAqhqw/S1gB6kOiE)
+
+The generic game framework is tuned for the types of games that Holochain is good for. In the game framework, all the work of creating entries and linking them is already done for you. You only need to "fill in the blanks" to implement the behaviour of your game.
+
+You will be building your game as the devcamp progresses - take it step by step.
+
+Overview of the zome files: 
+
+- `lib.rs`, `game.rs`, `game_move.rs`, `matchmaking.rs`: these files are the heart of the generic game framework. In this devcamp, we won't be editing these files, although you can look at them or experiment if you're curious.
+- `tictactoe` folder: each folder constitues a game. You can use it as a reference game implementation when you are implementing your own.
+- `your-game` folder: this is the folder that you will be editing. It contains todos that will guide you through the process.
+
+## ✍️ First Challenge - Play a game with yourself
 
 The first task lets you try out running a holochain instance locally with two agents to play a game of tic-tac-toe. Before you begin make sure you have the holochain conductor `holochain` available on your path.
 
@@ -152,3 +169,48 @@ y
 ```
 
 Thats it! Now you know how it works you can play out the rest of the game. Make sure you test what happens if you try to make an invalid move.
+
+## ✍️ Implement your own game
+
+Here you need to make an important decision on what game you will be implementing:
+
+- **Simple checkers game**: this is the main option. This is the game we will be implementing with all the group during the devcamp. Also, we already have reference implementation of the checkers game you can find in the other branch of this repository if you're stuck.
+- **Design and implement your own game** (advanced rust programmer): feeling adventurous? You can build another kind of game, from idea to design to implementation. Exciting! As devcamp mentors, we'll help all we can, though we can't provide the same type of resources of the checkers option.
+
+You already known which game you will be implementing? Good! You can begin these steps: 
+
+1. Rename the folder `your-game` to, well, to your game name.
+2. Look for `DEVCAMP TODO` in all the files inside that folder. You should see all the "fill in the blank" spots you will be implementing. These comments contain examples, hints and references to help you.
+
+**Note**: as your game won't be completely ready to compile until the last `TODO` is completed, we recommend using the code completion and error highlighting of an IDE.
+
+### ✍️ Exercises after Session 3 - 12/09
+
+Describe the moves of your game.
+
+1. Implement `DEVCAMP TODO #1`.
+2. Implement `DEVCAMP TODO #2`.
+
+### ✍️ Exercises after Session 4 - 13/09
+
+Describe your game state, how it evolves and how it is displayed.
+
+1. Implement `DEVCAMP TODO #3`.
+2. Implement `DEVCAMP TODO #4`.
+3. Implement `DEVCAMP TODO #5`.
+4. Implement `DEVCAMP TODO #6`.
+
+### ✍️ Exercises after Session 5 - 14/09
+
+Describe whether a move is valid or not depending on the current game state.
+
+1. Implement `DEVCAMP TODO #7`.
+2. Implement `DEVCAMP TODO #8`.
+
+### ✍️ Build and run
+
+After completing all the steps above, your game will be ready to be compiled and executed. Hooray!
+
+If you have opted to make the checkers game, you can use the [holochain-games-ui](https://github.com/holochain-devcamp/holochain-games-ui) to play with your game.
+
+In any case, you can use the CLI included in this repo to play any game you have implemented. Refer to step 1 of this guide to know how to use the CLI.

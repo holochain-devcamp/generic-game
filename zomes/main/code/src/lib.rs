@@ -28,16 +28,13 @@ use hdk::{
 
 /**
  * DEVCAMP TODO #8:
- * Import your own game State, MoveType and state_reducer
- *
- * Example: 
- *    mod tictactoe;
- *    pub use tictactoe::{
- *       GameState,
- *       MoveType,
- *    };
- * 
+ * Replace the tictactoe game import with your own game imports
  */
+mod tictactoe;
+pub use tictactoe::{
+   GameState,
+   MoveType,
+};
 
 
 mod game;

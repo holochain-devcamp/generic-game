@@ -21,17 +21,21 @@ pub enum MoveType {
      *     RollDice { number: u32 }
      *     GuessMovie(String)
      */
+     MovePiece {
+         from: Piece,
+         to: Piece
+     },
+     Resign
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson, PartialEq)]
+pub struct Piece {
+    pub x: usize,
+    pub y: usize
 }
 
 impl MoveType {
 	pub fn describe() -> Vec<MoveType> {
-        /**
-         * DEVCAMP TODO #2:
-         * Return a list containing each one of the MoveType enum variantss
-         * This is only a helper list function for the CLI to be able to output the list of possible moves
-         * 
-         * Hint: use the vec![] macro
-         * References: https://doc.rust-lang.org/1.3.0/std/macro.vec!.html
-         */
+        vec![MoveType::MovePiece { from: Piece { x: 0, y: 0 }, to: Piece { x: 1, y: 1 } }, MoveType::Resign]
 	}
 }

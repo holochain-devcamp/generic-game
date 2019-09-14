@@ -30,8 +30,8 @@ use hdk::{
  * DEVCAMP TODO #8:
  * Replace the tictactoe game import with your own game imports
  */
-mod tictactoe;
-pub use tictactoe::{
+mod checkers;
+pub use checkers::{
    GameState,
    MoveType,
 };

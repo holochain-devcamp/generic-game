@@ -13,5 +13,6 @@ pub use self::{
     },
     moves::{
         MoveType,
+        Piece
     },
 };
